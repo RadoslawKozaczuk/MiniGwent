@@ -1,18 +1,24 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Assets.GameLogic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class CardInfoUI : MonoBehaviour
+namespace Assets.Scripts.UI
 {
-    // Start is called before the first frame update
-    void Start()
+    public class CardInfoUI : MonoBehaviour
     {
-        
-    }
+        [SerializeField] TextMeshProUGUI _title;
+        [SerializeField] TextMeshProUGUI _description;
+        [SerializeField] TextMeshProUGUI _strength;
+        [SerializeField] Image _portrait;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        public void LoadDataForId(int id)
+        {
+            CardData data = GameEngine.DB[id];
+            _title.text = data.Title;
+            _description.text = data.Description;
+            _strength.text = "STR: " + data.Strength;
+            _portrait.sprite = GameEngine.Icons[id];
+        }
     }
 }

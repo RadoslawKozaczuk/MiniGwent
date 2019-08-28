@@ -65,9 +65,7 @@ MonoBehaviour:
       m_Calls: []
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-  m_text: Dog from a good dog house. Can bite and bark. Pretty useless in combat but
-    like a typical dog will chase any enemy that dare to move from the fron line to
-    a back line and by doing so it inflicts 1 dmg.
+  m_text: He can't do anything special but he is a decent warrior.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -224,7 +222,7 @@ MonoBehaviour:
       m_Calls: []
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-  m_text: 'STR: <color=red>14</color>'
+  m_text: 'STR: 3'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -381,7 +379,7 @@ MonoBehaviour:
       m_Calls: []
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-  m_text: Dog
+  m_text: Green Dude
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -491,7 +489,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4296128139498443961
 RectTransform:
   m_ObjectHideFlags: 0
@@ -565,6 +563,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71f918b9109076349b047002fe268168, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _title: {fileID: 4296128138748674390}
+  _description: {fileID: 4296128138000840719}
+  _strength: {fileID: 4296128138120355595}
+  _portrait: {fileID: 4296128139509962928}
 --- !u!1 &4296128139509962930
 GameObject:
   m_ObjectHideFlags: 0
@@ -630,7 +632,7 @@ MonoBehaviour:
       m_Calls: []
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-  m_Sprite: {fileID: 21300000, guid: c4280f62dd0103f4d80290e460ac2e23, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b782dc0b62d91564d92c995add12aebe, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

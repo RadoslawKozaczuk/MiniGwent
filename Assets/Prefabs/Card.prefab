@@ -364,8 +364,7 @@ GameObject:
   - component: {fileID: 1411971813999534769}
   - component: {fileID: 3628822729407213885}
   - component: {fileID: 2057269708900632538}
-  - component: {fileID: 1881993380173996685}
-  - component: {fileID: 6900867139929102533}
+  - component: {fileID: -4357496000557326259}
   - component: {fileID: 874020313097965242}
   - component: {fileID: 8577158432616657652}
   m_Layer: 5
@@ -448,7 +447,7 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 1, b: 0.9233861, a: 0.5529412}
   m_EffectDistance: {x: 0, y: 0}
   m_UseGraphicAlpha: 1
---- !u!114 &1881993380173996685
+--- !u!114 &-4357496000557326259
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -457,21 +456,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 3626688966682377523}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 051a664c7879431479c652b33f163bb5, type: 3}
+  m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &6900867139929102533
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3626688966682377523}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6eeec3254a92bc74b9c31b3631d4e000, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  Pulsation: 0
+  _outline: {fileID: 2057269708900632538}
 --- !u!114 &874020313097965242
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -486,12 +475,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CardInfoUI: {fileID: 0}
   Image: {fileID: 7126451580691053013}
-  Title: 
-  Description: 
-  Strength: 0
+  Id: 0
   _front: {fileID: 3080976296025862714}
   _back: {fileID: 8609493736848648391}
-  _outline: {fileID: 2057269708900632538}
+  _outline: {fileID: -4357496000557326259}
 --- !u!114 &8577158432616657652
 MonoBehaviour:
   m_ObjectHideFlags: 0
