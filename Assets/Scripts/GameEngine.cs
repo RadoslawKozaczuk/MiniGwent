@@ -1,4 +1,4 @@
-﻿using Assets.GameLogic;
+﻿using Assets.Core;
 using Assets.Scripts.UI;
 using System.Linq;
 using UnityEngine;
@@ -12,22 +12,22 @@ namespace Assets.Scripts
         public LineUI TopDeck;
         public LineUI TopBackline;
         public LineUI TopFrontline;
-        public LineUI BottomFrontline;
-        public LineUI BottomBackline;
-        public LineUI BottomDeck;
+        public LineUI BotFrontline;
+        public LineUI BotBackline;
+        public LineUI BotDeck;
 
         public GameObject CardContainer;
         public GameObject CardPrefab;
         public CardInfoUI CardInfoPanel;
 
         public Canvas MainCanvas; // everything is here
-        public Canvas SecondaryCanvas; // only dragged item are here
+        public Canvas SecondaryCanvas; // only dragged items are here
 
         public static readonly DummyDB DB = new DummyDB();
 
         public static Sprite[] Icons;
 
-        bool _lateSpawn = true;
+        public static GameLogic GameLogic = new GameLogic();
 
         public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
 
@@ -35,31 +35,40 @@ namespace Assets.Scripts
         {
             Instance = this;
             Icons = Resources.LoadAll("Icons", typeof(Sprite)).Cast<Sprite>().ToArray(); ;
+
+            //
+            TopDeck.LineIndicator = LineIndicator.TopDeck;
+            TopBackline.LineIndicator = LineIndicator.TopBackline;
+            TopFrontline.LineIndicator = LineIndicator.TopFrontline;
+            BotFrontline.LineIndicator = LineIndicator.BotFrontline;
+            BotBackline.LineIndicator = LineIndicator.BotBackline;
+            BotDeck.LineIndicator = LineIndicator.BotDeck;
         }
 
         void Start()
         {
-            
+            var deck = GameLogic.SpawnRandomDeck(LineIndicator.TopDeck);
+            deck.ForEach(c =>
+            {
+                CardUI ui = CreateUICardRepresentation(c.CardId);
+                TopDeck.PutInLine(ui);
+            });
+
+            var botdeck = GameLogic.SpawnRandomDeck(LineIndicator.BotDeck);
+            botdeck.ForEach(c =>
+            {
+                CardUI ui = CreateUICardRepresentation(c.CardId);
+                BotDeck.PutInLine(ui);
+            });
         }
 
         void Update()
         {
-            if(_lateSpawn)
-            {
-                // randomly spawn 3 cards and add them to the deck
-                for (int i = 0; i < 3; i++)
-                {
-                    CardUI card = CreateRandomCard();
-                    TopDeck.PutInLine(card);
-                }
 
-                _lateSpawn = false;
-            }
         }
 
-        CardUI CreateRandomCard()
+        CardUI CreateUICardRepresentation(int id)
         {
-            int id = Random.Range(0, DummyDB.Length);
             GameObject card = Instantiate(CardPrefab, transform);
             CardUI ui = card.GetComponent<CardUI>();
             ui.Id = id;

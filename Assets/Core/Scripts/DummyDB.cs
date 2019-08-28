@@ -1,10 +1,12 @@
-﻿namespace Assets.GameLogic
+﻿using Assets.Core.DataModel;
+
+namespace Assets.Core
 {
     public sealed class DummyDB
     {
         public CardData this[int id] => _cards[id];
 
-        public static int Length => _cards.Length;
+        public int Length => _cards.Length;
 
         static readonly CardData[] _cards = new CardData[]
         {

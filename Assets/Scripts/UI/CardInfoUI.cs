@@ -1,4 +1,4 @@
-﻿using Assets.GameLogic;
+﻿using Assets.Core.DataModel;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

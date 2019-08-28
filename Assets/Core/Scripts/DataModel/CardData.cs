@@ -1,4 +1,4 @@
-﻿namespace Assets.GameLogic
+﻿namespace Assets.Core.DataModel
 {
     public class CardData
     {

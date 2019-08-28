@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts.UI;
+using Assets.Core;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -6,7 +7,7 @@ using UnityEngine.UI;
 namespace Assets.Scripts
 {
     public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
-        IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
+        IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         public Image Image;
         public int Id;
@@ -21,7 +22,6 @@ namespace Assets.Scripts
 
         public Canvas mainCanvas;
         public Canvas secondaryCanvas;
-
 
         // this corresponds both to the sibling index on the line as well as the index in the table in GameLogic
         public int NumberInLine;
@@ -58,12 +58,17 @@ namespace Assets.Scripts
         {
             LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();
 
-            if (targetLine) // dropped on a line
+            if (targetLine && targetLine != ParentLineUI) // dropped on a line
             {
                 ParentLineUI.RemoveFromLine(NumberInLine);
+                // inform the game logic about it
+                GameEngine.GameLogic.MoveCard(ParentLineUI.LineIndicator, NumberInLine, targetLine.LineIndicator);
+
                 targetLine.PutInLine(this);
+
+                
             }
-            else // dropped somewhere else
+            else // dropped somewhere else or on the same line
             {
                 transform.SetParent(PreDragLocation);
                 transform.localPosition = Vector3.zero; // go back where you were
@@ -71,19 +76,5 @@ namespace Assets.Scripts
 
             GameEngine.CardBeingDraged = null;
         }
-
-        public void OnDrop(PointerEventData eventData)
-        {
-            RectTransform trans = transform as RectTransform;
-            if (RectTransformUtility.RectangleContainsScreenPoint(trans, Input.mousePosition))
-            {
-                Debug.Log("contains");
-            }
-            else
-            {
-                Debug.Log("Contains not");
-            }
-        }
-
     }
 }

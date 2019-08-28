@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Assets.Core;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -8,11 +9,11 @@ namespace Assets.Scripts.UI
     public class LineUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         public bool Outline = false;
+        [HideInInspector] public LineIndicator LineIndicator;
 
         OutlineController _outline;
 
         public List<CardUI> Cards = new List<CardUI>();
-
 
         void Awake()
         {
@@ -29,7 +30,7 @@ namespace Assets.Scripts.UI
             child.parent = null;
             Destroy(child.gameObject);
 
-            // all cards on the right must have their slot number reduced by one
+            // all cards on the right must have their NumberInLine reduced by one
             var cardsOnTheRight = Cards.TakeLast(Cards.Count - slotNumber - 1).ToList();
             cardsOnTheRight.ForEach(c => c.NumberInLine--);
 
