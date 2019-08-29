@@ -331,7 +331,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2358389217930484284
 RectTransform:
   m_ObjectHideFlags: 0
@@ -533,9 +533,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _outline: {fileID: -2197221875512962505}
   ForcedPulsation: 0
   BigPulsation: 1
+  _outline: {fileID: -2197221875512962505}
 --- !u!114 &874020313097965242
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -552,11 +552,14 @@ MonoBehaviour:
   Id: 0
   _front: {fileID: 3080976296025862714}
   _back: {fileID: 8609493736848648391}
+  _stengthText: {fileID: 1994120593390217360}
   OutlineController: {fileID: -3852311471536276703}
   ParentLineUI: {fileID: 0}
   mainCanvas: {fileID: 0}
   secondaryCanvas: {fileID: 0}
   NumberInLine: 0
+  MaxStrength: 0
+  CurrentStrength: 0
 --- !u!1 &4305453315290727417
 GameObject:
   m_ObjectHideFlags: 0

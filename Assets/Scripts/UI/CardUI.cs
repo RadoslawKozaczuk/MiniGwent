@@ -1,5 +1,6 @@
 ﻿using Assets.Core;
 using Assets.Scripts.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,10 +15,25 @@ namespace Assets.Scripts
 
         [SerializeField] GameObject _front;
         [SerializeField] GameObject _back;
+
+        bool _hidden;
+        public bool Hidden
+        {
+            get => _hidden;
+            set
+            {
+                _front.SetActive(!value);
+                _back.SetActive(value);
+                _hidden = value;
+            }
+        }
+
+        [SerializeField] TextMeshProUGUI _stengthText;
+
         public OutlineController OutlineController;
 
         // predrag stuff
-        Transform PreDragLocation;
+        Transform _preDragLocation;
         public LineUI ParentLineUI;
 
         public Canvas mainCanvas;
@@ -26,10 +42,26 @@ namespace Assets.Scripts
         // this corresponds both to the sibling index on the line as well as the index in the table in GameLogic
         public int NumberInLine;
 
+        public int MaxStrength;
+        public int CurrentStrength;
+
+        public CardUI UpdateStrengthText() // return this to allow method chaining
+        {
+            if (CurrentStrength < MaxStrength)
+                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
+            else if (CurrentStrength == MaxStrength)
+                _stengthText.text = $"STR: {CurrentStrength}";
+            else
+                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
+
+            return this;
+        }
+
+        #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
             // if nothing is being dragged
-            if(!GameEngine.CardBeingDraged)
+            if(!GameEngine.CardBeingDraged && !_hidden)
             {
                 OutlineController.TurnPulsationOn();
                 GameEngine.Instance.CardInfoPanel.gameObject.SetActive(true);
@@ -45,7 +77,7 @@ namespace Assets.Scripts
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            PreDragLocation = transform.parent;
+            _preDragLocation = transform.parent;
             
             // move to secondary canvas in order to be displayed always on top
             transform.SetParent(secondaryCanvas.transform, true);
@@ -80,11 +112,12 @@ namespace Assets.Scripts
             }
             else // dropped somewhere else or on the same line
             {
-                transform.SetParent(PreDragLocation);
+                transform.SetParent(_preDragLocation);
                 transform.localPosition = Vector3.zero; // go back where you were
             }
 
             GameEngine.CardBeingDraged = null;
         }
+        #endregion
     }
 }

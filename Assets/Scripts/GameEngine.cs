@@ -1,4 +1,5 @@
 ﻿using Assets.Core;
+using Assets.Core.DataModel;
 using Assets.Scripts.UI;
 using System.Linq;
 using UnityEngine;
@@ -21,7 +22,6 @@ namespace Assets.Scripts
         public CardInfoUI CardInfoPanel;
         public GameObject TargetSlotIndicatorPrefab;
 
-
         public RectTransform ObjectDump;
 
         public Canvas MainCanvas; // everything is here
@@ -35,35 +35,28 @@ namespace Assets.Scripts
 
         public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
 
-        private void Awake()
+        LineUI[] _lines;
+
+        void Awake()
         {
             Instance = this;
             Icons = Resources.LoadAll("Icons", typeof(Sprite)).Cast<Sprite>().ToArray(); ;
 
-            //
             TopDeck.LineIndicator = LineIndicator.TopDeck;
             TopBackline.LineIndicator = LineIndicator.TopBackline;
             TopFrontline.LineIndicator = LineIndicator.TopFrontline;
             BotFrontline.LineIndicator = LineIndicator.BotFrontline;
             BotBackline.LineIndicator = LineIndicator.BotBackline;
             BotDeck.LineIndicator = LineIndicator.BotDeck;
+
+            // for convenience
+            _lines = new LineUI[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
         }
 
         void Start()
         {
-            var deck = GameLogic.SpawnRandomDeck(LineIndicator.TopDeck);
-            deck.ForEach(c =>
-            {
-                CardUI ui = CreateUICardRepresentation(c.CardId);
-                TopDeck.InsertCard(ui);
-            });
-
-            var botdeck = GameLogic.SpawnRandomDeck(LineIndicator.BotDeck);
-            botdeck.ForEach(c =>
-            {
-                CardUI ui = CreateUICardRepresentation(c.CardId);
-                BotDeck.InsertCard(ui);
-            });
+            SpawnDeck(LineIndicator.TopDeck, true);
+            SpawnDeck(LineIndicator.BotDeck, false);
         }
 
         void Update()
@@ -71,14 +64,32 @@ namespace Assets.Scripts
 
         }
 
-        CardUI CreateUICardRepresentation(int id)
+        void SpawnDeck(LineIndicator line, bool hidden)
+        {
+#if UNITY_EDITOR
+            if (line != LineIndicator.TopDeck && line != LineIndicator.BotDeck)
+                throw new System.ArgumentException("SpawnDeck method can only target TopDeck or BotDeck lines.", "line");
+#endif
+
+            GameLogic.SpawnRandomDeck(line)
+                .ForEach(cardModel => _lines[(int)line].InsertCard(
+                    CreateUICardRepresentation(cardModel, hidden).UpdateStrengthText()));
+        }
+
+        CardUI CreateUICardRepresentation(CardModel cardModel, bool hidden)
         {
             GameObject card = Instantiate(CardPrefab, transform);
+
             CardUI ui = card.GetComponent<CardUI>();
-            ui.Id = id;
+            ui.Id = cardModel.CardId;
             ui.mainCanvas = MainCanvas;
             ui.secondaryCanvas = SecondaryCanvas;
-            ui.Image.sprite = Icons[id];
+            ui.Image.sprite = Icons[cardModel.CardId];
+
+            ui.MaxStrength = cardModel.DefaultStrength;
+            ui.CurrentStrength = cardModel.DefaultStrength;
+
+            ui.Hidden = hidden;
 
             return ui;
         }

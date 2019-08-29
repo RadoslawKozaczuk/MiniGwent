@@ -3,13 +3,14 @@
     public class CardModel
     {
         public int CardId;
-        public int Strength;
+        public int DefaultStrength;
+        public int CurrentStrength;
         public int SlotNumber;
 
         public CardModel(int id)
         {
             CardId = id;
-            Strength = GameLogic.DB[id].Strength;
+            DefaultStrength = GameLogic.DB[id].Strength;
         }
 
         //public override string ToString() 

@@ -29,7 +29,10 @@ namespace Assets.Scripts.UI
 
         void Update()
         {
-            if (isMouseOver && GameEngine.CardBeingDraged && GameEngine.CardBeingDraged.ParentLineUI != this)
+            if (isMouseOver 
+                && GameEngine.CardBeingDraged 
+                && GameEngine.CardBeingDraged.ParentLineUI != this
+                && targetSlotIndicator)
             {
                 TargetSlotPositionNumber = GetTargetSlotPositionNumber();
                 targetSlotIndicator.transform.SetSiblingIndex(TargetSlotPositionNumber);

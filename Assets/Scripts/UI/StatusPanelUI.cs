@@ -15,7 +15,6 @@ namespace Assets.Scripts.UI
             GameLogic.GameLogicStatusChangedEventHandler += GameStatusChanged;
         }
 
-
         public void GameStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
             Text.text = eventArgs.CurrentStatus + Environment.NewLine + eventArgs.CurrentStrength;

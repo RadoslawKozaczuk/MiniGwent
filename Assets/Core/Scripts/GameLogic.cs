@@ -21,12 +21,12 @@ namespace Assets.Core
         /// </summary>
         public static event EventHandler<GameLogicStatusChangedEventArgs> GameLogicStatusChangedEventHandler;
 
-        List<CardModel> TopDeck = new List<CardModel>();
-        List<CardModel> TopBackline = new List<CardModel>();
-        List<CardModel> TopFrontline = new List<CardModel>();
-        List<CardModel> BotFrontline = new List<CardModel>();
-        List<CardModel> BotBackline = new List<CardModel>();
-        List<CardModel> BotDeck = new List<CardModel>();
+        readonly List<CardModel> TopDeck = new List<CardModel>();
+        readonly List<CardModel> TopBackline = new List<CardModel>();
+        readonly List<CardModel> TopFrontline = new List<CardModel>();
+        readonly List<CardModel> BotFrontline = new List<CardModel>();
+        readonly List<CardModel> BotBackline = new List<CardModel>();
+        readonly List<CardModel> BotDeck = new List<CardModel>();
 
         readonly List<CardModel>[] _lines;
 
@@ -75,16 +75,16 @@ namespace Assets.Core
             #endregion
 
             List<CardModel> fLine = _lines[(int)fromLine];
-            CardModel card = fLine[fromSlotNumber];
-
             List<CardModel> tLine = _lines[(int)targetLine];
-            card.SlotNumber = tLine.Count;
+
+            CardModel card = fLine[fromSlotNumber];
+            card.SlotNumber = targetSlotNumber;
 
             fLine.RemoveAt(fromSlotNumber);
 
-            // all cards on the right must have their NumberInLine reduced by one
-            var cardsOnTheRight = fLine.TakeLast(fLine.Count - fromSlotNumber - 1).ToList();
-            cardsOnTheRight.ForEach(c => c.SlotNumber--);
+            // all cards on the right must have their SlotNumber reduced by one
+            fLine.AllOnTheRight(fromSlotNumber, c => c.SlotNumber--);
+            tLine.AllOnTheRight(targetSlotNumber, c => c.SlotNumber++);
 
             if (targetSlotNumber == tLine.Count)
                 tLine.Add(card);
@@ -98,11 +98,12 @@ namespace Assets.Core
         /// <summary>
         /// For safety reasons it returns a copy of the list.
         /// </summary>
-        /// <param name="line"></param>
-        /// <returns></returns>
         public List<CardModel> SpawnRandomDeck(LineIndicator line)
         {
-            // assert line is bot or top
+#if UNITY_EDITOR
+            if (line != LineIndicator.TopDeck && line != LineIndicator.BotDeck)
+                throw new System.ArgumentException("SpawnRandomDeck method can only target TopDeck or BotDeck lines.", "line");
+#endif
 
             var deck = new List<CardModel>(NUMBER_OF_CARDS_IN_DECK);
             for (int i = 0; i < NUMBER_OF_CARDS_IN_DECK; i++)
@@ -115,7 +116,7 @@ namespace Assets.Core
             UpdateStrengths();
             BroadcastGameLogicStatusChanged();
 
-            return new List<CardModel>(deck);
+            return new List<CardModel>(deck); // encapsulation
         }
 
         string GetCurrentStatus()
@@ -135,8 +136,8 @@ namespace Assets.Core
 
         void UpdateStrengths()
         {
-            TopStrength = TopBackline.Sum(c => c.Strength) + TopFrontline.Sum(c => c.Strength);
-            BotStrength = BotBackline.Sum(c => c.Strength) + BotFrontline.Sum(c => c.Strength);
+            TopStrength = TopBackline.Sum(c => c.CurrentStrength) + TopFrontline.Sum(c => c.CurrentStrength);
+            BotStrength = BotBackline.Sum(c => c.CurrentStrength) + BotFrontline.Sum(c => c.CurrentStrength);
         }
 
         string GetCurrentStrength() 
