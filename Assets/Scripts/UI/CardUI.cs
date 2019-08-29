@@ -1,5 +1,5 @@
-﻿using Assets.Scripts.UI;
-using Assets.Core;
+﻿using Assets.Core;
+using Assets.Scripts.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,7 +14,7 @@ namespace Assets.Scripts
 
         [SerializeField] GameObject _front;
         [SerializeField] GameObject _back;
-        [SerializeField] OutlineController _outline;
+        public OutlineController OutlineController;
 
         // predrag stuff
         Transform PreDragLocation;
@@ -28,14 +28,18 @@ namespace Assets.Scripts
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            _outline.TurnPulsationOn();
-            GameEngine.Instance.CardInfoPanel.gameObject.SetActive(true);
-            GameEngine.Instance.CardInfoPanel.LoadDataForId(Id);
+            // if nothing is being dragged
+            if(!GameEngine.CardBeingDraged)
+            {
+                OutlineController.TurnPulsationOn();
+                GameEngine.Instance.CardInfoPanel.gameObject.SetActive(true);
+                GameEngine.Instance.CardInfoPanel.LoadDataForId(Id);
+            }
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            _outline.TurnPulsationOff();
+            OutlineController.TurnPulsationOff();
             GameEngine.Instance.CardInfoPanel.gameObject.SetActive(false);
         }
 
@@ -60,13 +64,17 @@ namespace Assets.Scripts
 
             if (targetLine && targetLine != ParentLineUI) // dropped on a line
             {
-                ParentLineUI.RemoveFromLine(NumberInLine);
-                // inform the game logic about it
-                GameEngine.GameLogic.MoveCard(ParentLineUI.LineIndicator, NumberInLine, targetLine.LineIndicator);
+                // its important to copy these values as they may get changed in the methods below
+                LineIndicator parent = ParentLineUI.LineIndicator;
+                int fromSlotNumber = NumberInLine;
+                LineIndicator target = targetLine.LineIndicator;
 
-                targetLine.PutInLine(this);
 
-                
+                ParentLineUI.RemoveFromLine(fromSlotNumber, false);
+                targetLine.InsertCard(this);
+
+                // inform logic abut it
+                GameEngine.GameLogic.MoveCard(parent, fromSlotNumber, target);
             }
             else // dropped somewhere else or on the same line
             {

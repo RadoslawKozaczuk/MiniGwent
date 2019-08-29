@@ -16,9 +16,10 @@ namespace Assets.Scripts
         public LineUI BotBackline;
         public LineUI BotDeck;
 
-        public GameObject CardContainer;
+        public GameObject CardContainerPrefab;
         public GameObject CardPrefab;
         public CardInfoUI CardInfoPanel;
+        public GameObject TargetSlotIndicatorPrefab;
 
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
@@ -51,14 +52,14 @@ namespace Assets.Scripts
             deck.ForEach(c =>
             {
                 CardUI ui = CreateUICardRepresentation(c.CardId);
-                TopDeck.PutInLine(ui);
+                TopDeck.InsertCard(ui);
             });
 
             var botdeck = GameLogic.SpawnRandomDeck(LineIndicator.BotDeck);
             botdeck.ForEach(c =>
             {
                 CardUI ui = CreateUICardRepresentation(c.CardId);
-                BotDeck.PutInLine(ui);
+                BotDeck.InsertCard(ui);
             });
         }
 

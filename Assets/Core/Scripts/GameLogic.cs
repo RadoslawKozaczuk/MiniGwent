@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
+using UnityEngine;
 
 namespace Assets.Core
 {
@@ -13,7 +15,7 @@ namespace Assets.Core
 
     public class GameLogic
     {
-        const int NUMBER_OF_CARDS_IN_DECK = 6;
+        const int NUMBER_OF_CARDS_IN_DECK = 5;
 
         /// <summary>
         /// Subscribe to this event to receive notifications each time resource number has changed.
@@ -32,18 +34,11 @@ namespace Assets.Core
         int TopStrength;
         int BotStrength;
 
-        readonly DummyDB DB = new DummyDB();
+        internal static readonly DummyDB DB = new DummyDB();
 
         public GameLogic()
         {
             _lines = new List<CardModel>[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
-        }
-
-        public void AddCardToLine(LineIndicator targetLine, CardModel card)
-        {
-            _lines[(int)targetLine].Add(card);
-
-            BroadcastGameLogicStatusChanged();
         }
 
         /// <summary>
@@ -54,17 +49,36 @@ namespace Assets.Core
         {
             _lines[(int)targetLine].RemoveAt(cardNumber);
 
+            UpdateStrengths();
             BroadcastGameLogicStatusChanged();
         }
 
-        public void MoveCard(LineIndicator fromLine, int fromCardNumber, LineIndicator targetLine)
+        public void MoveCard(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine)
         {
-            CardModel card = _lines[(int)fromLine][fromCardNumber];
+            List<CardModel> fLine = _lines[(int)fromLine];
+            CardModel card = fLine[fromSlotNumber];
 
-            RemoveCardFromLine(fromLine, fromCardNumber);
-            AddCardToLine(targetLine, card);
+            // give new slot numberinio
+            List<CardModel> tLine = _lines[(int)targetLine];
+            card.SlotNumber = tLine.Count;
+
+            fLine.RemoveAt(fromSlotNumber);
+
+            // all cards on the right must have their NumberInLine reduced by one
+            var cardsOnTheRight = fLine.TakeLast(fLine.Count - fromSlotNumber - 1).ToList();
+            cardsOnTheRight.ForEach(c => c.SlotNumber--);
+
+            tLine.Add(card);
+
+            UpdateStrengths();
+            BroadcastGameLogicStatusChanged();
         }
 
+        /// <summary>
+        /// For safety reasons it returns a copy of the list.
+        /// </summary>
+        /// <param name="line"></param>
+        /// <returns></returns>
         public List<CardModel> SpawnRandomDeck(LineIndicator line)
         {
             // assert line is bot or top
@@ -72,19 +86,15 @@ namespace Assets.Core
             var deck = new List<CardModel>(NUMBER_OF_CARDS_IN_DECK);
             for (int i = 0; i < NUMBER_OF_CARDS_IN_DECK; i++)
             {
-                CardModel card = GetRandomCard();
-                AddCardToLine(line, card);
+                CardModel card = new CardModel(UnityEngine.Random.Range(0, DB.Length)) { SlotNumber = i };
+                _lines[(int)line].Add(card);
                 deck.Add(card);
             }
 
-            return new List<CardModel>(deck);
-        }
+            UpdateStrengths();
+            BroadcastGameLogicStatusChanged();
 
-        CardModel GetRandomCard()
-        {
-            int id = UnityEngine.Random.Range(0, DB.Length);
-            CardData data = DB[id];
-            return new CardModel(id, data.Strength);
+            return new List<CardModel>(deck);
         }
 
         string GetCurrentStatus()
@@ -95,14 +105,26 @@ namespace Assets.Core
             {
                 sb.Append($"{i + 1}. ");
                 foreach (CardModel c in _lines[i])
-                    sb.Append(c.ToString());
+                    sb.Append(c);
                 sb.AppendLine();
             }
 
             return sb.ToString();
         }
 
-        string GetCurrentStrength() => $"Top: {TopStrength} Bot: {BotStrength}";
+        void UpdateStrengths()
+        {
+            //Debug.Log("TopBackline: " + TopBackline.Sum(c => c.Strength));
+            //Debug.Log("TopFrontline: " + TopFrontline.Sum(c => c.Strength));
+            //Debug.Log("BotFrontline: " + BotFrontline.Sum(c => c.Strength));
+            //Debug.Log("BotBackline: " + BotBackline.Sum(c => c.Strength));
+
+            TopStrength = TopBackline.Sum(c => c.Strength) + TopFrontline.Sum(c => c.Strength);
+            BotStrength = BotBackline.Sum(c => c.Strength) + BotFrontline.Sum(c => c.Strength);
+        }
+
+        string GetCurrentStrength() 
+            => $"Top Strength: {TopStrength} \nBot Strength: {BotStrength}";
 
         // we call the event - if there is no subscribers we will get a null exception error therefore we use a safe call (null check)
         void BroadcastGameLogicStatusChanged() 

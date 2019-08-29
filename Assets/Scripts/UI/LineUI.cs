@@ -15,6 +15,8 @@ namespace Assets.Scripts.UI
 
         public List<CardUI> Cards = new List<CardUI>();
 
+        GameObject targetSlotIndicator;
+
         void Awake()
         {
             if(Outline)
@@ -24,7 +26,7 @@ namespace Assets.Scripts.UI
         /// <summary>
         /// This removes the slot container game object.
         /// </summary>
-        public void RemoveFromLine(int slotNumber)
+        public void RemoveFromLine(int slotNumber, bool informInternalLogic)
         {
             Transform child = transform.GetChild(slotNumber);
             child.parent = null;
@@ -35,16 +37,21 @@ namespace Assets.Scripts.UI
             cardsOnTheRight.ForEach(c => c.NumberInLine--);
 
             Cards.RemoveAt(slotNumber);
+
+            // inform the game logic about it
+            if(informInternalLogic)
+                GameEngine.GameLogic.RemoveCardFromLine(LineIndicator, slotNumber);
         }
 
         /// <summary>
         /// Creates a new free spot and adds card to it.
+        /// This method does not inform the game logic about anything.
         /// </summary>
-        public void PutInLine(CardUI card)
+        public void InsertCard(CardUI card)
         {
             card.NumberInLine = Cards.Count;
 
-            GameObject slot = Instantiate(GameEngine.Instance.CardContainer, transform);
+            GameObject slot = Instantiate(GameEngine.Instance.CardContainerPrefab, transform);
             card.transform.SetParent(slot.transform);
             card.transform.localPosition = Vector3.zero;
             card.ParentLineUI = this;
@@ -54,13 +61,28 @@ namespace Assets.Scripts.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (Outline)
-                if (GameEngine.CardBeingDraged)
-                    _outline.TurnPulsationOn();
+            //if (Outline)
+            //    if (GameEngine.CardBeingDraged)
+            //        _outline.TurnPulsationOn();
+
+            // dragujesz karte z innej lini na tą
+            if (GameEngine.CardBeingDraged && GameEngine.CardBeingDraged.ParentLineUI != this)
+            {
+                _outline.TurnPulsationOn();
+
+                // (pozniej) is valid target
+                // podswietla ci gdzie karta wyladuje 
+                // czyli musi ja zinstacjonowac i wlaczyc jej podswietlenie
+
+                // stworz empty
+                targetSlotIndicator = Instantiate(GameEngine.Instance.TargetSlotIndicatorPrefab, transform);
+            }
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            Destroy(targetSlotIndicator);
+
             if (Outline)
                 _outline.TurnPulsationOff();
         }
