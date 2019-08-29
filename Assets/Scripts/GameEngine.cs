@@ -21,6 +21,9 @@ namespace Assets.Scripts
         public CardInfoUI CardInfoPanel;
         public GameObject TargetSlotIndicatorPrefab;
 
+
+        public RectTransform ObjectDump;
+
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
 

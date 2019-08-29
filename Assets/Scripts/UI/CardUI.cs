@@ -68,13 +68,15 @@ namespace Assets.Scripts
                 LineIndicator parent = ParentLineUI.LineIndicator;
                 int fromSlotNumber = NumberInLine;
                 LineIndicator target = targetLine.LineIndicator;
-
+                int targetSlotNumber = targetLine.TargetSlotPositionNumber;
 
                 ParentLineUI.RemoveFromLine(fromSlotNumber, false);
-                targetLine.InsertCard(this);
+                targetLine.InsertCard(this, targetSlotNumber);
 
                 // inform logic abut it
-                GameEngine.GameLogic.MoveCard(parent, fromSlotNumber, target);
+                GameEngine.GameLogic.MoveCard(parent, fromSlotNumber, target, targetSlotNumber);
+
+                targetLine.DestroyTargetSlotIndicator();
             }
             else // dropped somewhere else or on the same line
             {

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using UnityEngine;
 
 namespace Assets.Core
 {
@@ -53,12 +52,31 @@ namespace Assets.Core
             BroadcastGameLogicStatusChanged();
         }
 
-        public void MoveCard(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine)
+        public void MoveCard(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
+            #region Assertions
+#if UNITY_EDITOR
+            if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)
+                throw new System.ArgumentOutOfRangeException(
+                    "fromSlotNumber", 
+                    "argument cannot be lower than 0 or greater than the number of cards in the line.");
+
+            if (targetSlotNumber < 0 || targetSlotNumber > _lines[(int)targetLine].Count)
+                throw new System.ArgumentOutOfRangeException(
+                    "targetSlotNumber", 
+                    "argument cannot be lower than 0 or greater than the number of cards in the line.");
+
+            if (targetLine == LineIndicator.TopDeck || targetLine == LineIndicator.BotDeck)
+                throw new System.ArgumentException("Moving card to a deck is an invalid move.");
+
+            if (fromLine == targetLine)
+                throw new System.ArgumentException("Moving card to the same line is an invalid move.");
+#endif
+            #endregion
+
             List<CardModel> fLine = _lines[(int)fromLine];
             CardModel card = fLine[fromSlotNumber];
 
-            // give new slot numberinio
             List<CardModel> tLine = _lines[(int)targetLine];
             card.SlotNumber = tLine.Count;
 
@@ -68,7 +86,10 @@ namespace Assets.Core
             var cardsOnTheRight = fLine.TakeLast(fLine.Count - fromSlotNumber - 1).ToList();
             cardsOnTheRight.ForEach(c => c.SlotNumber--);
 
-            tLine.Add(card);
+            if (targetSlotNumber == tLine.Count)
+                tLine.Add(card);
+            else
+                tLine.Insert(targetSlotNumber, card);
 
             UpdateStrengths();
             BroadcastGameLogicStatusChanged();
@@ -114,11 +135,6 @@ namespace Assets.Core
 
         void UpdateStrengths()
         {
-            //Debug.Log("TopBackline: " + TopBackline.Sum(c => c.Strength));
-            //Debug.Log("TopFrontline: " + TopFrontline.Sum(c => c.Strength));
-            //Debug.Log("BotFrontline: " + BotFrontline.Sum(c => c.Strength));
-            //Debug.Log("BotBackline: " + BotBackline.Sum(c => c.Strength));
-
             TopStrength = TopBackline.Sum(c => c.Strength) + TopFrontline.Sum(c => c.Strength);
             BotStrength = BotBackline.Sum(c => c.Strength) + BotFrontline.Sum(c => c.Strength);
         }

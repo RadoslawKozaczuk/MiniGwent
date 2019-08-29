@@ -17,10 +17,36 @@ namespace Assets.Scripts.UI
 
         GameObject targetSlotIndicator;
 
+        bool isMouseOver;
+
         void Awake()
         {
             if(Outline)
                 _outline = GetComponent<OutlineController>();
+        }
+
+        public int TargetSlotPositionNumber; 
+
+        void Update()
+        {
+            if (isMouseOver && GameEngine.CardBeingDraged && GameEngine.CardBeingDraged.ParentLineUI != this)
+            {
+                TargetSlotPositionNumber = GetTargetSlotPositionNumber();
+                targetSlotIndicator.transform.SetSiblingIndex(TargetSlotPositionNumber);
+            }
+        }
+
+        int GetTargetSlotPositionNumber()
+        {
+            var mousePos = Input.mousePosition;
+            for (int i = 0; i < Cards.Count; i++)
+            {
+                Vector3 cardPos = Camera.main.transform.InverseTransformPoint(Cards[i].transform.position);
+                if (mousePos.x < cardPos.x)
+                    return i;
+            }
+
+            return Cards.Count;
         }
 
         /// <summary>
@@ -29,7 +55,7 @@ namespace Assets.Scripts.UI
         public void RemoveFromLine(int slotNumber, bool informInternalLogic)
         {
             Transform child = transform.GetChild(slotNumber);
-            child.parent = null;
+            child.SetParent(GameEngine.Instance.ObjectDump);
             Destroy(child.gameObject);
 
             // all cards on the right must have their NumberInLine reduced by one
@@ -59,11 +85,29 @@ namespace Assets.Scripts.UI
             Cards.Add(card);
         }
 
+        /// <summary>
+        /// Creates a new free spot and adds card to it.
+        /// This method does not inform the game logic about anything.
+        /// </summary>
+        public void InsertCard(CardUI card, int slotNumber)
+        {
+            GameObject slot = Instantiate(GameEngine.Instance.CardContainerPrefab, transform);
+            slot.transform.SetSiblingIndex(slotNumber);
+
+            card.transform.SetParent(slot.transform);
+            card.transform.localPosition = Vector3.zero;
+            card.ParentLineUI = this;
+            card.NumberInLine = Cards.Count;
+
+            if (slotNumber == Cards.Count)
+                Cards.Add(card);
+            else
+                Cards.Insert(slotNumber, card);
+        }
+
         public void OnPointerEnter(PointerEventData eventData)
         {
-            //if (Outline)
-            //    if (GameEngine.CardBeingDraged)
-            //        _outline.TurnPulsationOn();
+            isMouseOver = true;
 
             // dragujesz karte z innej lini na tą
             if (GameEngine.CardBeingDraged && GameEngine.CardBeingDraged.ParentLineUI != this)
@@ -81,10 +125,24 @@ namespace Assets.Scripts.UI
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            Destroy(targetSlotIndicator);
+            isMouseOver = false;
+
+            if (targetSlotIndicator)
+                DestroyTargetSlotIndicator();
 
             if (Outline)
                 _outline.TurnPulsationOff();
+        }
+
+        public void DestroyTargetSlotIndicator()
+        {
+            // remove from the horizontal group and move out of the map
+            Transform dump = GameEngine.Instance.ObjectDump.transform;
+            targetSlotIndicator.transform.SetParent(dump);
+            targetSlotIndicator.transform.position = dump.position;
+
+            Destroy(targetSlotIndicator);
+            targetSlotIndicator = null;
         }
     }
 }
