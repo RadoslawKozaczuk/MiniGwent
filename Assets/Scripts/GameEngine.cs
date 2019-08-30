@@ -38,14 +38,13 @@ namespace Assets.Scripts
 
         public static readonly DummyDB DB = new DummyDB();
 
-
         public static Sprite[] Icons;
 
         public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
 
         LineUI[] _lines;
 
-
+        #region Unity life-cycle methods
         void Awake()
         {
             Instance = this;
@@ -55,7 +54,7 @@ namespace Assets.Scripts
             _lines = new LineUI[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
 
             // subscribe
-            GameLogic.GameLogicStatusChangedEventHandler += GameStatusChanged;
+            GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
         }
 
         void Start()
@@ -72,6 +71,7 @@ namespace Assets.Scripts
                 GameLogic.StartAITurn();
             }
         }
+        #endregion
 
         void SpawnDeck(PlayerIndicator player, bool hidden)
         {
@@ -103,7 +103,7 @@ namespace Assets.Scripts
             return ui;
         }
 
-        public void GameStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
+        void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
             MoveData move = eventArgs.LastMove;
 

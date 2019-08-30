@@ -1,5 +1,7 @@
 ﻿using Assets.Core.DataModel;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Assets.Core
 {
@@ -11,7 +13,7 @@ namespace Assets.Core
         List<CardModel> _myFrontline;
         GameLogic _gameLogic;
 
-        public AI(PlayerIndicator player, List<CardModel> deck, List<CardModel> backline, List<CardModel> frontline, GameLogic gameLogic)
+        internal AI(PlayerIndicator player, List<CardModel> deck, List<CardModel> backline, List<CardModel> frontline, GameLogic gameLogic)
         {
             _player = player;
             _myDeck = deck;
@@ -20,23 +22,38 @@ namespace Assets.Core
             _gameLogic = gameLogic;
         }
 
-        public void MakeMove()
+        /// <summary>
+        /// If fakeThinking parameter is set to true, AI will wait certain amount of time [1-3]s before the execution continues.
+        /// </summary>
+        internal async void MakeMove(bool fakeThinking = true)
         {
             // How to make a game-changing move in 3 steps:
-            // 1. choose a random card from deck
-            int fromSlotNumber = UnityEngine.Random.Range(0, _myDeck.Count);
+            // 1. choose a random card from your deck
+            int fromSlotNumber = Random.Range(0, _myDeck.Count);
 
             // 2. excellent choice, now pick randomly a line
-            PlayerLine line = UnityEngine.Random.Range(0, 2) == 0 
+            PlayerLine line = Random.Range(0, 2) == 0 
                 ? PlayerLine.Backline 
                 : PlayerLine.Frontline;
              
-            // 3. brilliant! Finally choose a random spot and play that card
+            // 3. brilliant! Finally choose a random slot and play that card there
             int maxSlotNumber = line == PlayerLine.Backline ? _myBackline.Count : _myFrontline.Count;
-            int targetSlotNumber = UnityEngine.Random.Range(0, maxSlotNumber + 1);
+            int targetSlotNumber = Random.Range(0, maxSlotNumber + 1);
 
-            // inform the rest of the world about it
-            _gameLogic.MoveCard(_player, fromSlotNumber, line, targetSlotNumber);
+            if(fakeThinking)
+            {
+                // pretend it took you some time to come up with such amazing idea
+                int delay = Random.Range(1000, 3000);
+                var t = Task.Run(async delegate
+                {
+                    await Task.Delay(delay);
+                    _gameLogic.MoveCard(_player, fromSlotNumber, line, targetSlotNumber);
+                });
+
+                await Task.WhenAll(t);
+            }
+            else
+                _gameLogic.MoveCard(_player, fromSlotNumber, line, targetSlotNumber);
         }
     }
 }

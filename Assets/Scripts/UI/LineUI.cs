@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 
 namespace Assets.Scripts.UI
 {
+    [DisallowMultipleComponent]
     public class LineUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         public CardUI this[int id]

@@ -1,28 +1,26 @@
-﻿using TMPro;
-using UnityEngine;
-using Assets.Core;
+﻿using Assets.Core;
 using System;
+using TMPro;
+using UnityEngine;
 
 namespace Assets.Scripts.UI
 {
+    [DisallowMultipleComponent]
     class StatusPanelUI : MonoBehaviour
     {
-        public TextMeshProUGUI Text;
+        [SerializeField] TextMeshProUGUI _text;
 
-        void Awake()
-        {
-            // subscribe to GameLogic
-            GameLogic.GameLogicStatusChangedEventHandler += GameStatusChanged;
-        }
+        // subscribe to GameLogic
+        void Awake() => GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
 
-        public void GameStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
-        {
-            Text.text 
-                = eventArgs.CurrentStatus
+        void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs) 
+            => _text.text
+                = "Game Logic Internal Status:"
+                + Environment.NewLine
+                + eventArgs.CurrentStatus
                 + Environment.NewLine
                 + "Top Strength: " + eventArgs.OverallTopStrength
-                + Environment.NewLine 
+                + Environment.NewLine
                 + "Bot Strength: " + eventArgs.OverallBotStrength;
-        }
     }
 }

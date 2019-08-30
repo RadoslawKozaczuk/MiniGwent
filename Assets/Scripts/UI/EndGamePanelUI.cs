@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.UI
 {
+    [DisallowMultipleComponent]
     public class EndGamePanelUI : MonoBehaviour
     {
         [SerializeField] TextMeshProUGUI _title;

@@ -6,16 +6,17 @@ namespace Assets.Scripts
     [RequireComponent(typeof(Outline))]
     public class OutlineController : MonoBehaviour
     {
+        static Color _cyanColor = new Color(0, 255, 235, 100); // cyan color
+
         public bool ForcedPulsation;
         public bool BigPulsation;
 
         [SerializeField] Outline _outline;
 
-        Color _color = new Color(0, 255, 235, 100); // cyan color
         bool _pulsation;
 
         #region Unity life-cycle methods
-        void Awake() => _outline.effectColor = _color;
+        void Awake() => _outline.effectColor = _cyanColor;
 
         void Update()
         {

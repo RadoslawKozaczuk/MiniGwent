@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 namespace Assets.Scripts
 {
+    [DisallowMultipleComponent]
     public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
         IBeginDragHandler, IDragHandler, IEndDragHandler
     {

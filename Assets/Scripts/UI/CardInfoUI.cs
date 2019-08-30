@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 namespace Assets.Scripts.UI
 {
+    [DisallowMultipleComponent]
     public class CardInfoUI : MonoBehaviour
     {
         [SerializeField] TextMeshProUGUI _title;
