@@ -13,10 +13,18 @@ namespace Assets.Scripts
         public Image Image;
         public int Id;
 
+        /// <summary>
+        /// Indicates whether that card should be able to drag.
+        /// </summary>
+        public bool Draggable;
+
         [SerializeField] GameObject _front;
         [SerializeField] GameObject _back;
 
         bool _hidden;
+        /// <summary>
+        /// When set to true card back is shown.
+        /// </summary>
         public bool Hidden
         {
             get => _hidden;
@@ -45,16 +53,16 @@ namespace Assets.Scripts
         public int MaxStrength;
         public int CurrentStrength;
 
-        public CardUI UpdateStrengthText() // return this to allow method chaining
+        public CardUI UpdateStrengthText()
         {
             if (CurrentStrength < MaxStrength)
                 _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
             else if (CurrentStrength == MaxStrength)
                 _stengthText.text = $"STR: {CurrentStrength}";
-            else
+            else 
                 _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
 
-            return this;
+            return this; // return this to allow method chaining
         }
 
         #region Interface Implementation
@@ -77,6 +85,9 @@ namespace Assets.Scripts
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            if (!Draggable)
+                return;
+
             _preDragLocation = transform.parent;
             
             // move to secondary canvas in order to be displayed always on top
@@ -87,23 +98,31 @@ namespace Assets.Scripts
 
         public void OnDrag(PointerEventData eventData)
         {
+            if (!Draggable)
+                return;
+
             transform.position = Input.mousePosition;
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();
+            if (!Draggable)
+                return;
 
+            LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();
             if (targetLine && targetLine != ParentLineUI) // dropped on a line
             {
                 // its important to copy these values as they may get changed in the methods below
-                LineIndicator parent = ParentLineUI.LineIndicator;
+                Line parent = ParentLineUI.LineIndicator;
                 int fromSlotNumber = NumberInLine;
-                LineIndicator target = targetLine.LineIndicator;
+                Line target = targetLine.LineIndicator;
                 int targetSlotNumber = targetLine.TargetSlotPositionNumber;
 
                 ParentLineUI.RemoveFromLine(fromSlotNumber, false);
                 targetLine.InsertCard(this, targetSlotNumber);
+
+                // every card once moved becomes non drag-able anymore
+                Draggable = false;
 
                 // inform logic abut it
                 GameEngine.GameLogic.MoveCard(parent, fromSlotNumber, target, targetSlotNumber);

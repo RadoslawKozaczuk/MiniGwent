@@ -17,7 +17,12 @@ namespace Assets.Scripts.UI
 
         public void GameStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
-            Text.text = eventArgs.CurrentStatus + Environment.NewLine + eventArgs.CurrentStrength;
+            Text.text 
+                = eventArgs.CurrentStatus
+                + Environment.NewLine
+                + "Top Strength: " + eventArgs.OverallTopStrength
+                + Environment.NewLine 
+                + "Top Strength: " + eventArgs.OverallBotStrength;
         }
     }
 }

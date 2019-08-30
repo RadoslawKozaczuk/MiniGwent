@@ -8,8 +8,16 @@ namespace Assets.Scripts.UI
 {
     public class LineUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
+        public CardUI this[int id]
+        {
+            get => Cards[id];
+            set => Cards[id] = value;
+        }
+
+        public int Count => Cards.Count;
+
         public bool Outline = false;
-        [HideInInspector] public LineIndicator LineIndicator;
+        [HideInInspector] public Line LineIndicator;
 
         OutlineController _outline;
 

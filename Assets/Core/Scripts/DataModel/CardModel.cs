@@ -11,6 +11,7 @@
         {
             CardId = id;
             DefaultStrength = GameLogic.DB[id].Strength;
+            CurrentStrength = DefaultStrength;
         }
 
         //public override string ToString() 
