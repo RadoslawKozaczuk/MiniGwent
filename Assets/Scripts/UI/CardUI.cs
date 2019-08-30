@@ -125,7 +125,7 @@ namespace Assets.Scripts
                 Draggable = false;
 
                 // inform logic abut it
-                GameEngine.GameLogic.MoveCard(parent, fromSlotNumber, target, targetSlotNumber);
+                GameEngine.Instance.GameLogic.MoveCard(parent, fromSlotNumber, target, targetSlotNumber);
 
                 targetLine.DestroyTargetSlotIndicator();
             }

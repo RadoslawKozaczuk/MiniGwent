@@ -10,6 +10,7 @@ namespace Assets.Scripts
     {
         public static GameEngine Instance;
 
+        // lines
         public LineUI TopDeck;
         public LineUI TopBackline;
         public LineUI TopFrontline;
@@ -17,21 +18,27 @@ namespace Assets.Scripts
         public LineUI BotBackline;
         public LineUI BotDeck;
 
+        // prefabs
         public GameObject CardContainerPrefab;
         public GameObject CardPrefab;
-        public CardInfoUI CardInfoPanel;
         public GameObject TargetSlotIndicatorPrefab;
+
+        // static ui elements
+        public CardInfoUI CardInfoPanel;
+        public EndGamePanelUI EndGamePanel;
+        public GameObject BlackBackground;
+        public GameLogic GameLogic;
 
         public RectTransform ObjectDump;
 
+        // canvases
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
 
         public static readonly DummyDB DB = new DummyDB();
 
-        public static Sprite[] Icons;
 
-        public static GameLogic GameLogic = new GameLogic();
+        public static Sprite[] Icons;
 
         public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
 
@@ -64,12 +71,10 @@ namespace Assets.Scripts
 
         void Update()
         {
-            // spacja powoduje ruch komputera
             if(Input.GetKeyDown(KeyCode.Space))
             {
                 // give away control to AI
                 GameLogic.StartAITurn();
-                // podnoszenie kart powinno byc przyblokowane
             }
         }
 
@@ -85,9 +90,6 @@ namespace Assets.Scripts
                     CreateUICardRepresentation(cardModel, hidden).UpdateStrengthText()));
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         CardUI CreateUICardRepresentation(CardModel cardModel, bool hidden)
         {
             GameObject card = Instantiate(CardPrefab, transform);
@@ -109,10 +111,16 @@ namespace Assets.Scripts
 
         public void GameStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
-            LastMove move = eventArgs.LastMove;
+            MoveData move = eventArgs.LastMove;
 
             if(move != null)
                 MoveCard(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
+
+            if(eventArgs.MessageType == GameLogicMessageType.GameOver)
+            {
+                BlackBackground.SetActive(true);
+                EndGamePanel.SetData(eventArgs.OverallTopStrength, eventArgs.OverallBotStrength);
+            }
         }
 
         void MoveCard(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)

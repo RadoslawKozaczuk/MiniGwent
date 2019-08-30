@@ -22,7 +22,7 @@ namespace Assets.Scripts.UI
                 + Environment.NewLine
                 + "Top Strength: " + eventArgs.OverallTopStrength
                 + Environment.NewLine 
-                + "Top Strength: " + eventArgs.OverallBotStrength;
+                + "Bot Strength: " + eventArgs.OverallBotStrength;
         }
     }
 }

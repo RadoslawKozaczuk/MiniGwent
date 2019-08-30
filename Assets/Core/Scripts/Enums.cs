@@ -8,7 +8,11 @@
     /// </summary>
     public enum PlayerLine { Deck, Backline, Frontline }
 
-    public enum Player { Top, Bot }
+    public enum PlayerPosition { Top, Bot }
 
-    public enum PlayerControl { Human, CPU }
+    public enum PlayerControl { Human, AI }
+
+    public enum GameType { HumanVsAi, AIVsAI }
+
+    public enum GameLogicMessageType { Normal, GameOver }
 }

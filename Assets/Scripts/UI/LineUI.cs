@@ -77,7 +77,7 @@ namespace Assets.Scripts.UI
 
             // inform the game logic about it
             if(informInternalLogic)
-                GameEngine.GameLogic.RemoveCardFromLine(LineIndicator, slotNumber);
+                GameEngine.Instance.GameLogic.RemoveCardFromLine(LineIndicator, slotNumber);
         }
 
         /// <summary>
@@ -138,8 +138,7 @@ namespace Assets.Scripts.UI
         {
             isMouseOver = false;
 
-            if (targetSlotIndicator)
-                DestroyTargetSlotIndicator();
+            DestroyTargetSlotIndicator();
 
             if (Outline)
                 _outline.TurnPulsationOff();
@@ -147,6 +146,9 @@ namespace Assets.Scripts.UI
 
         public void DestroyTargetSlotIndicator()
         {
+            if (targetSlotIndicator == null)
+                return;
+
             // remove from the horizontal group and move out of the map
             Transform dump = GameEngine.Instance.ObjectDump.transform;
             targetSlotIndicator.transform.SetParent(dump);

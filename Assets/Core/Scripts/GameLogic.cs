@@ -3,10 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using UnityEngine;
 
 namespace Assets.Core
 { 
-    public class GameLogic
+    [DisallowMultipleComponent]
+    public class GameLogic : MonoBehaviour
     {
         const int NUMBER_OF_CARDS_IN_DECK = 5;
 
@@ -32,13 +34,24 @@ namespace Assets.Core
         internal static readonly DummyDB DB = new DummyDB();
 
         bool _blockExternalCalls; // when AI is moving 
-
         AI _ai;
+        bool _isDirty;
 
         public GameLogic()
         {
             _lines = new List<CardModel>[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
-            _ai = new AI(Player.Top, TopDeck, TopBackline, TopFrontline, this);
+            _ai = new AI(PlayerPosition.Top, TopDeck, TopBackline, TopFrontline, this);
+        }
+
+        void LateUpdate()
+        {
+            if(_isDirty)
+            {
+                UpdateStrengths();
+                BroadcastGameLogicStatusChanged();
+
+                _isDirty = false;
+            }
         }
 
         public void StartAITurn()
@@ -54,15 +67,13 @@ namespace Assets.Core
         public void RemoveCardFromLine(Line targetLine, int cardNumber)
         {
             _lines[(int)targetLine].RemoveAt(cardNumber);
-
-            UpdateStrengths();
-            BroadcastGameLogicStatusChanged();
+            _isDirty = true;
         }
 
         /// <summary>
         /// this is for AI
         /// </summary>
-        public void MoveCard(Player player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
+        public void MoveCard(PlayerPosition player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
         {
             // AI use abstraction so we need these values to be mapped
             Line fLine = MapPlayerLine(player, PlayerLine.Deck);
@@ -72,16 +83,16 @@ namespace Assets.Core
             MoveCard(fLine, fromSlotNumber, tLine, targetSlotNumber);
         }
 
-        public Line MapPlayerLine(Player player, PlayerLine line)
+        public Line MapPlayerLine(PlayerPosition player, PlayerLine line)
         {
-            if (player == Player.Top)
+            if (player == PlayerPosition.Top)
                 switch(line)
                 {
                     case PlayerLine.Deck: return Line.TopDeck;
                     case PlayerLine.Backline: return Line.TopBackline;
                     case PlayerLine.Frontline: return Line.TopFrontline;
                 }
-            else if(player == Player.Bot)
+            else if(player == PlayerPosition.Bot)
                 switch (line)
                 {
                     case PlayerLine.Deck: return Line.BotDeck;
@@ -141,8 +152,7 @@ namespace Assets.Core
             else
                 tLine.Insert(targetSlotNumber, card);
 
-            UpdateStrengths();
-            BroadcastGameLogicStatusChanged();
+            _isDirty = true;
         }
 
         /// <summary>
@@ -163,8 +173,7 @@ namespace Assets.Core
                 deck.Add(card);
             }
 
-            UpdateStrengths();
-            BroadcastGameLogicStatusChanged();
+            _isDirty = true;
 
             return new List<CardModel>(deck); // encapsulation
         }
@@ -193,17 +202,23 @@ namespace Assets.Core
         // we call the event - if there is no subscribers we will get a null exception error therefore we use a safe call (null check)
         void BroadcastGameLogicStatusChanged()
         {
-            GameLogicStatusChangedEventHandler?.Invoke(
-                this,
-                new GameLogicStatusChangedEventArgs()
-                {
-                    CurrentStatus = GetCurrentStatus(),
-                    OverallTopStrength = TopStrength,
-                    OverallBotStrength = BotStrength,
-                    LastMove = LastAIMove
-                });
+            var args = new GameLogicStatusChangedEventArgs(GetCurrentStatus(), TopStrength, BotStrength, LastAIMove); ;
 
             LastAIMove = null;
+
+            // sprawdz czy zostaly ruchy
+            if (TopDeck.Count == 0 && BotDeck.Count == 0)
+            {
+                // game over
+                args.MessageType = GameLogicMessageType.GameOver;
+            }
+            else
+            {
+                args.MessageType = GameLogicMessageType.Normal;
+            }
+
+            GameLogicStatusChangedEventHandler?.Invoke(this, args);
+
         }
     }
 }
