@@ -53,6 +53,8 @@ namespace Assets.Scripts
         public int MaxStrength;
         public int CurrentStrength;
 
+        public PlayerIndicator PlayerIndicator;
+
         public CardUI UpdateStrengthText()
         {
             if (CurrentStrength < MaxStrength)

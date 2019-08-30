@@ -20,14 +20,14 @@ namespace Assets.Scripts.UI
             {
                 // topinio won
                 _title.text = "<color=red>Defeat</color>";
-                _whoWon.text = "CPU wins";
+                _whoWon.text = "AI killed you!";
                 _score.text = $"{botStrength} - <color=orange>{topStrength}</color>";
             }
             else if (topStrength == botStrength)
             {
                 // draw
                 _title.text = "<color=orange>Draw</color>";
-                _whoWon.text = "Round unresolved";
+                _whoWon.text = "Both sides equally good.";
                 _score.text = $"{botStrength} - {topStrength}";
             }
             else

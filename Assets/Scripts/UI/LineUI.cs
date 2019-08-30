@@ -17,7 +17,8 @@ namespace Assets.Scripts.UI
         public int Count => Cards.Count;
 
         public bool Outline = false;
-        [HideInInspector] public Line LineIndicator;
+        public Line LineIndicator;
+        public PlayerIndicator PlayerIndicator;
 
         OutlineController _outline;
 
@@ -120,16 +121,14 @@ namespace Assets.Scripts.UI
         {
             isMouseOver = true;
 
-            // dragujesz karte z innej lini na tą
-            if (GameEngine.CardBeingDraged && GameEngine.CardBeingDraged.ParentLineUI != this)
+            CardUI card = GameEngine.CardBeingDraged;
+            if (card != null
+                && card.ParentLineUI != this
+                && card.PlayerIndicator == PlayerIndicator)
             {
                 _outline.TurnPulsationOn();
 
-                // (pozniej) is valid target
-                // podswietla ci gdzie karta wyladuje 
-                // czyli musi ja zinstacjonowac i wlaczyc jej podswietlenie
-
-                // stworz empty
+                // create empty
                 targetSlotIndicator = Instantiate(GameEngine.Instance.TargetSlotIndicatorPrefab, transform);
             }
         }

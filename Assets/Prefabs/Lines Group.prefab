@@ -129,6 +129,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ForcedPulsation: 0
+  BigPulsation: 0
   _outline: {fileID: 2011387372}
 --- !u!114 &4193414214843863666
 MonoBehaviour:
@@ -143,8 +145,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Outline: 1
-  _cardContainer: {fileID: 4140325349048215008, guid: 2a77bd7471b757742b14321623223759,
-    type: 3}
+  LineIndicator: 1
+  PlayerIndicator: 0
+  Cards: []
+  TargetSlotPositionNumber: 0
 --- !u!1 &7151509043425921558
 GameObject:
   m_ObjectHideFlags: 0
@@ -258,8 +262,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Outline: 0
-  _cardContainer: {fileID: 4140325349048215008, guid: 2a77bd7471b757742b14321623223759,
-    type: 3}
+  LineIndicator: 5
+  PlayerIndicator: 1
+  Cards: []
+  TargetSlotPositionNumber: 0
 --- !u!1 &7151509043430925139
 GameObject:
   m_ObjectHideFlags: 0
@@ -389,6 +395,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ForcedPulsation: 0
+  BigPulsation: 0
   _outline: {fileID: 1457171479}
 --- !u!114 &2509548881890952898
 MonoBehaviour:
@@ -403,8 +411,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Outline: 1
-  _cardContainer: {fileID: 4140325349048215008, guid: 2a77bd7471b757742b14321623223759,
-    type: 3}
+  LineIndicator: 4
+  PlayerIndicator: 1
+  Cards: []
+  TargetSlotPositionNumber: 0
 --- !u!1 &7151509043659430697
 GameObject:
   m_ObjectHideFlags: 0
@@ -534,6 +544,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ForcedPulsation: 0
+  BigPulsation: 0
   _outline: {fileID: 1077630065}
 --- !u!114 &5167755408847413242
 MonoBehaviour:
@@ -548,8 +560,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Outline: 1
-  _cardContainer: {fileID: 4140325349048215008, guid: 2a77bd7471b757742b14321623223759,
-    type: 3}
+  LineIndicator: 3
+  PlayerIndicator: 1
+  Cards: []
+  TargetSlotPositionNumber: 0
 --- !u!1 &7151509044020733055
 GameObject:
   m_ObjectHideFlags: 0
@@ -663,8 +677,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Outline: 0
-  _cardContainer: {fileID: 4140325349048215008, guid: 2a77bd7471b757742b14321623223759,
-    type: 3}
+  LineIndicator: 0
+  PlayerIndicator: 0
+  Cards: []
+  TargetSlotPositionNumber: 0
 --- !u!1 &7151509044734922323
 GameObject:
   m_ObjectHideFlags: 0
@@ -861,6 +877,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ForcedPulsation: 0
+  BigPulsation: 0
   _outline: {fileID: 75204979}
 --- !u!114 &1682616598162492653
 MonoBehaviour:
@@ -875,5 +893,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Outline: 1
-  _cardContainer: {fileID: 4140325349048215008, guid: 2a77bd7471b757742b14321623223759,
-    type: 3}
+  LineIndicator: 2
+  PlayerIndicator: 0
+  Cards: []
+  TargetSlotPositionNumber: 0

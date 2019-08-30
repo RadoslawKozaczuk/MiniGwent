@@ -1,6 +1,7 @@
 ﻿using Assets.Core;
 using Assets.Core.DataModel;
 using Assets.Scripts.UI;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -44,20 +45,14 @@ namespace Assets.Scripts
 
         LineUI[] _lines;
 
+
         void Awake()
         {
             Instance = this;
             Icons = Resources.LoadAll("Icons", typeof(Sprite)).Cast<Sprite>().ToArray(); ;
 
-            TopDeck.LineIndicator = Line.TopDeck;
-            TopBackline.LineIndicator = Line.TopBackline;
-            TopFrontline.LineIndicator = Line.TopFrontline;
-            BotFrontline.LineIndicator = Line.BotFrontline;
-            BotBackline.LineIndicator = Line.BotBackline;
-            BotDeck.LineIndicator = Line.BotDeck;
-
             // for convenience
-             _lines = new LineUI[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
+            _lines = new LineUI[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
 
             // subscribe
             GameLogic.GameLogicStatusChangedEventHandler += GameStatusChanged;
@@ -65,8 +60,8 @@ namespace Assets.Scripts
 
         void Start()
         {
-            SpawnDeck(Line.TopDeck, true);
-            SpawnDeck(Line.BotDeck, false);
+            SpawnDeck(PlayerIndicator.Top, true);
+            SpawnDeck(PlayerIndicator.Bot, false);
         }
 
         void Update()
@@ -78,19 +73,16 @@ namespace Assets.Scripts
             }
         }
 
-        void SpawnDeck(Line line, bool hidden)
+        void SpawnDeck(PlayerIndicator player, bool hidden)
         {
-#if UNITY_EDITOR
-            if (line != Line.TopDeck && line != Line.BotDeck)
-                throw new System.ArgumentException("SpawnDeck method can only target TopDeck or BotDeck lines.", "line");
-#endif
+            List<CardModel> cards = GameLogic.SpawnRandomDeck(player);
+            LineUI targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
 
-            GameLogic.SpawnRandomDeck(line)
-                .ForEach(cardModel => _lines[(int)line].InsertCard(
-                    CreateUICardRepresentation(cardModel, hidden).UpdateStrengthText()));
+            cards.ForEach(cardModel => targetLine.InsertCard(
+                CreateUICardRepresentation(cardModel, player, hidden).UpdateStrengthText()));
         }
 
-        CardUI CreateUICardRepresentation(CardModel cardModel, bool hidden)
+        CardUI CreateUICardRepresentation(CardModel cardModel, PlayerIndicator player, bool hidden)
         {
             GameObject card = Instantiate(CardPrefab, transform);
 
@@ -105,6 +97,8 @@ namespace Assets.Scripts
 
             ui.Hidden = hidden;
             ui.Draggable = !hidden;
+
+            ui.PlayerIndicator = player;
 
             return ui;
         }

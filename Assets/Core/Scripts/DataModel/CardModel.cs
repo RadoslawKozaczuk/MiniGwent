@@ -2,13 +2,17 @@
 {
     public class CardModel
     {
+        public readonly PlayerIndicator PlayerIndicator;
+
         public int CardId;
         public int DefaultStrength;
         public int CurrentStrength;
         public int SlotNumber;
 
-        public CardModel(int id)
+        public CardModel(int id, PlayerIndicator playerIndicator)
         {
+            PlayerIndicator = playerIndicator;
+
             CardId = id;
             DefaultStrength = GameLogic.DB[id].Strength;
             CurrentStrength = DefaultStrength;

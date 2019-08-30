@@ -5,13 +5,13 @@ namespace Assets.Core
 {
     class AI
     {
-        PlayerPosition _player;
+        PlayerIndicator _player;
         List<CardModel> _myDeck;
         List<CardModel> _myBackline;
         List<CardModel> _myFrontline;
         GameLogic _gameLogic;
 
-        public AI(PlayerPosition player, List<CardModel> deck, List<CardModel> backline, List<CardModel> frontline, GameLogic gameLogic)
+        public AI(PlayerIndicator player, List<CardModel> deck, List<CardModel> backline, List<CardModel> frontline, GameLogic gameLogic)
         {
             _player = player;
             _myDeck = deck;

@@ -8,7 +8,7 @@
     /// </summary>
     public enum PlayerLine { Deck, Backline, Frontline }
 
-    public enum PlayerPosition { Top, Bot }
+    public enum PlayerIndicator { Top, Bot }
 
     public enum PlayerControl { Human, AI }
 

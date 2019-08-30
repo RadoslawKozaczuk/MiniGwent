@@ -40,7 +40,7 @@ namespace Assets.Core
         public GameLogic()
         {
             _lines = new List<CardModel>[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
-            _ai = new AI(PlayerPosition.Top, TopDeck, TopBackline, TopFrontline, this);
+            _ai = new AI(PlayerIndicator.Top, TopDeck, TopBackline, TopFrontline, this);
         }
 
         void LateUpdate()
@@ -73,7 +73,7 @@ namespace Assets.Core
         /// <summary>
         /// this is for AI
         /// </summary>
-        public void MoveCard(PlayerPosition player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
+        public void MoveCard(PlayerIndicator player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
         {
             // AI use abstraction so we need these values to be mapped
             Line fLine = MapPlayerLine(player, PlayerLine.Deck);
@@ -83,16 +83,16 @@ namespace Assets.Core
             MoveCard(fLine, fromSlotNumber, tLine, targetSlotNumber);
         }
 
-        public Line MapPlayerLine(PlayerPosition player, PlayerLine line)
+        public Line MapPlayerLine(PlayerIndicator player, PlayerLine line)
         {
-            if (player == PlayerPosition.Top)
+            if (player == PlayerIndicator.Top)
                 switch(line)
                 {
                     case PlayerLine.Deck: return Line.TopDeck;
                     case PlayerLine.Backline: return Line.TopBackline;
                     case PlayerLine.Frontline: return Line.TopFrontline;
                 }
-            else if(player == PlayerPosition.Bot)
+            else if(player == PlayerIndicator.Bot)
                 switch (line)
                 {
                     case PlayerLine.Deck: return Line.BotDeck;
@@ -158,24 +158,19 @@ namespace Assets.Core
         /// <summary>
         /// For safety reasons it returns a copy of the list.
         /// </summary>
-        public List<CardModel> SpawnRandomDeck(Line line)
+        public List<CardModel> SpawnRandomDeck(PlayerIndicator player)
         {
-#if UNITY_EDITOR
-            if (line != Line.TopDeck && line != Line.BotDeck)
-                throw new System.ArgumentException("SpawnRandomDeck method can only target TopDeck or BotDeck lines.", "line");
-#endif
-
-            var deck = new List<CardModel>(NUMBER_OF_CARDS_IN_DECK);
+            List<CardModel> targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
             for (int i = 0; i < NUMBER_OF_CARDS_IN_DECK; i++)
             {
-                CardModel card = new CardModel(UnityEngine.Random.Range(0, DB.Length)) { SlotNumber = i };
-                _lines[(int)line].Add(card);
-                deck.Add(card);
+                int cardType = UnityEngine.Random.Range(0, DB.Length);
+                var card = new CardModel(cardType, player) { SlotNumber = i };
+                targetLine.Add(card);
             }
 
             _isDirty = true;
 
-            return new List<CardModel>(deck); // encapsulation
+            return new List<CardModel>(targetLine); // encapsulation
         }
 
         string GetCurrentStatus()
