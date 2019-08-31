@@ -12,7 +12,11 @@
 
     public enum PlayerControl { Human, AI }
 
-    public enum GameType { HumanVsAi, AIVsAI }
+    public enum GameType { Human_vs_AI, AI_vs_AI }
 
     public enum GameLogicMessageType { Normal, GameOver }
+
+    public enum CardSkillExecutionMoment { OnDeploy, EndOfTurn }
+
+    public enum CardSkillExecutionControlType { Automatic, Manual }
 }

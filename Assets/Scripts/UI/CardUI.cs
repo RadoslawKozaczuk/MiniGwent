@@ -107,7 +107,7 @@ namespace Assets.Scripts
             if (!Draggable)
                 return;
 
-            transform.position = Input.mousePosition;
+            transform.localPosition = secondaryCanvas.ScreenToCanvasPosition(Input.mousePosition);
         }
 
         public void OnEndDrag(PointerEventData eventData)

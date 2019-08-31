@@ -3,9 +3,9 @@
     public class CardModel
     {
         public readonly PlayerIndicator PlayerIndicator;
+        public readonly int DefaultStrength;
 
         public int CardId;
-        public int DefaultStrength;
         public int CurrentStrength;
         public int SlotNumber;
 

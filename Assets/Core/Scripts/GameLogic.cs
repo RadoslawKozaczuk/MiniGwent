@@ -10,7 +10,8 @@ namespace Assets.Core
     [DisallowMultipleComponent]
     public class GameLogic : MonoBehaviour
     {
-        const int NUMBER_OF_CARDS_IN_DECK = 5;
+        public const int MAX_NUMBER_OF_CARDS_IN_LINE = 10;
+        const int NUMBER_OF_CARDS_IN_DECK = 6;
 
         /// <summary>
         /// Subscribe to this event to receive notifications each time resource number has changed.
@@ -71,9 +72,9 @@ namespace Assets.Core
         }
 
         /// <summary>
-        /// this is for AI
+        /// This is for AI
         /// </summary>
-        public void MoveCard(PlayerIndicator player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
+        internal void MoveCard(PlayerIndicator player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
         {
             // AI use abstraction so we need these values to be mapped
             Line fLine = MapPlayerLine(player, PlayerLine.Deck);
@@ -83,7 +84,7 @@ namespace Assets.Core
             MoveCard(fLine, fromSlotNumber, tLine, targetSlotNumber);
         }
 
-        public Line MapPlayerLine(PlayerIndicator player, PlayerLine line)
+        internal Line MapPlayerLine(PlayerIndicator player, PlayerLine line)
         {
             if (player == PlayerIndicator.Top)
                 switch(line)
@@ -213,7 +214,6 @@ namespace Assets.Core
             }
 
             GameLogicStatusChangedEventHandler?.Invoke(this, args);
-
         }
     }
 }

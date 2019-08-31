@@ -1,5 +1,7 @@
 ﻿using Assets.Core;
+using Assets.Core.CardSkills;
 using Assets.Core.DataModel;
+using Assets.Scripts.Interfaces;
 using Assets.Scripts.UI;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +9,7 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
-    public class MainUIController : MonoBehaviour
+    public class MainUIController : MonoBehaviour, IMainUIController
     {
         public static MainUIController Instance;
 
@@ -32,6 +34,8 @@ namespace Assets.Scripts
         public EndTurnPanelUI EndTurnPanel;
 
         public RectTransform ObjectDump;
+
+        public VFXController VFXController;
 
         // canvases
         public Canvas MainCanvas; // everything is here
@@ -73,7 +77,8 @@ namespace Assets.Scripts
         }
         #endregion
 
-        internal void HandleEndTurnAction()
+        #region Interface Implementation
+        public void HandleEndTurnAction()
         {
             EndTurnPanel.SetAiThinking();
             _gameLogic.StartAITurn();
@@ -81,19 +86,33 @@ namespace Assets.Scripts
             BlockDragAction = true;
         }
 
-        internal void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        public void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
         {
+            #region Assertions
 #if UNITY_EDITOR
             MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 #endif
+            #endregion
 
-            MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, informGameLogic: true);
 
-            _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform game logic
+            // if there are some skills to do, do them
+            CardData cardData = DB[movedCard.Id];
+            CardSkill skill = cardData.Skill;
+            if(skill != null)
+            {
+                if(cardData.Skill.ExecutionMoment == CardSkillExecutionMoment.OnDeploy)
+                {
+                    // movedCard.ParentLineUI.Cards
+                    VFXController.PlayCloud(movedCard.ParentLineUI.Cards);
+                }
+                  // narazie wiadomo ze to jest smelly fish
+            }
 
             // later on add some extra logic like check if all cards action are played or something like that
             EndTurnPanel.SetNothingElseToDo();
         }
+        #endregion
 
         void SpawnDeck(PlayerIndicator player, bool hidden)
         {
@@ -131,7 +150,7 @@ namespace Assets.Scripts
 
             if (move != null)
             {
-                MoveCard(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
+                MoveCardOnUI(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber, informGameLogic: false);
                 EndTurnPanel.SetYourTurn();
                 BlockDragAction = false;
             }
@@ -143,11 +162,13 @@ namespace Assets.Scripts
             }
         }
 
-        void MoveCard(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        CardUI MoveCardOnUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber, bool informGameLogic)
         {
+            #region Assertions
 #if UNITY_EDITOR
             MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 #endif
+            #endregion
 
             LineUI fLine = _lines[(int)fromLine];
             LineUI tLine = _lines[(int)targetLine];
@@ -157,8 +178,14 @@ namespace Assets.Scripts
 
             fLine.RemoveFromLine(fromSlotNumber);
             tLine.InsertCard(card, targetSlotNumber);
+
+            if(informGameLogic)
+                _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform game logic
+
+            return card;
         }
 
+        #region Assertions
 #if UNITY_EDITOR
         void MoveCardAssertions(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
         {
@@ -189,5 +216,6 @@ namespace Assets.Scripts
                 throw new System.ArgumentException("Moving card from any top line to any bot line is not allowed.");
         }
 #endif
+        #endregion
     }
 }

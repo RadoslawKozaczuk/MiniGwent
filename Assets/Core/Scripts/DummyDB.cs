@@ -1,4 +1,5 @@
-﻿using Assets.Core.DataModel;
+﻿using Assets.Core.CardSkills;
+using Assets.Core.DataModel;
 
 namespace Assets.Core
 {
@@ -10,26 +11,18 @@ namespace Assets.Core
 
         static readonly CardData[] _cards = new CardData[]
         {
-            new CardData()
+            new CardData(
+                "Dog",
+                "Likes to chase mailmen. Once a turn he attacks first enemy unit that goes from frontline to backline inflicting 1 dmg.",
+                2),
+            new CardData(
+                "Smelly Fish",
+                "Stinks like a dumpster, when deployed inflicts 1 dmg to all units at your line and the corresponding enemy line.",
+                1)
             {
-                Title = "Dog",
-                Description = "Likes to chase mailmen. Once a turn he attacks first enemy unit that goes " +
-                    "from frontline to backline inflicting 1 dmg.",
-                Strength = 2
+                Skill = new CardSkill(CardSkillExecutionMoment.OnDeploy, CardSkillExecutionControlType.Automatic)
             },
-            new CardData()
-            {
-                Title = "Red Fish",
-                Description = "Stinks like a dumpster, when deployed inflicts 1 dmg to all units at your line " +
-                    "and the corresponding enemy line.",
-                Strength = 1
-            },
-            new CardData()
-            {
-                Title = "Green Dude",
-                Description = "He can't do anything special but he is a decent warrior.",
-                Strength = 3
-            }
+            new CardData("Green Dude", "He can't do anything special but he is a decent warrior.", 3)
         };
     }
 }

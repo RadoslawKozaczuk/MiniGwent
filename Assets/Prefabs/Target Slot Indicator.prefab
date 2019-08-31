@@ -74,9 +74,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ebdef0aa0179943b74deefcd01d512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _outline: {fileID: 4990590359736046549}
   ForcedPulsation: 1
   BigPulsation: 0
+  _outline: {fileID: 4990590359736046549}
 --- !u!114 &8490516183269641380
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,7 +143,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 50, y: 75}
+  m_SizeDelta: {x: 100, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5476392933387499673
 CanvasRenderer:

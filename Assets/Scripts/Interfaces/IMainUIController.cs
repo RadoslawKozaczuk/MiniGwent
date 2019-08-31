@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Assets.Core;
 
 namespace Assets.Scripts.Interfaces
 {
     interface IMainUIController
     {
+        void HandleEndTurnAction();
+
+        void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber);
     }
 }

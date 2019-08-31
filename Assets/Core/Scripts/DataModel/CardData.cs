@@ -1,9 +1,20 @@
-﻿namespace Assets.Core.DataModel
+﻿using Assets.Core.CardSkills;
+
+namespace Assets.Core.DataModel
 {
     public class CardData
     {
-        public string Title;
-        public string Description;
-        public int Strength;
+        public readonly string Title;
+        public readonly string Description;
+        public readonly int Strength;
+
+        public CardSkill Skill;
+
+        public CardData(string title, string description, int strength)
+        {
+            Title = title;
+            Description = description;
+            Strength = strength;
+        }
     }
 }

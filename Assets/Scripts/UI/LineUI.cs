@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Assets.Scripts.UI
 {
@@ -27,12 +28,16 @@ namespace Assets.Scripts.UI
 
         GameObject targetSlotIndicator;
 
+        GridLayoutGroup _gridLayoutGroup;
+
         bool isMouseOver;
 
         void Awake()
         {
             if(Outline)
                 _outline = GetComponent<OutlineController>();
+
+            _gridLayoutGroup = GetComponent<GridLayoutGroup>();
         }
 
         public int TargetSlotPositionNumber; 
@@ -49,13 +54,42 @@ namespace Assets.Scripts.UI
             }
         }
 
+        #region Interfaces Implementation
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            isMouseOver = true;
+
+            CardUI card = MainUIController.CardBeingDraged;
+            if (card != null
+                && card.ParentLineUI != this
+                && card.PlayerIndicator == PlayerIndicator)
+            {
+                _outline.TurnPulsationOn();
+
+                // create empty
+                targetSlotIndicator = Instantiate(MainUIController.Instance.TargetSlotIndicatorPrefab, transform);
+
+                RecalculateSpacing();
+            }
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            isMouseOver = false;
+
+            DestroyTargetSlotIndicator();
+
+            if (Outline)
+                _outline.TurnPulsationOff();
+        }
+        #endregion
+
         int GetTargetSlotPositionNumber()
         {
-            var mousePos = Input.mousePosition;
             for (int i = 0; i < Cards.Count; i++)
             {
-                Vector3 cardPos = Camera.main.transform.InverseTransformPoint(Cards[i].transform.position);
-                if (mousePos.x < cardPos.x)
+                Vector3 cardPos = Cards[i].transform.parent.localPosition;
+                if (MainUIController.Instance.SecondaryCanvas.ScreenToCanvasPosition(Input.mousePosition).x < cardPos.x)
                     return i;
             }
 
@@ -76,6 +110,8 @@ namespace Assets.Scripts.UI
             cardsOnTheRight.ForEach(c => c.SlotNumber--);
 
             Cards.RemoveAt(slotNumber);
+
+            RecalculateSpacing();
         }
 
         /// <summary>
@@ -90,8 +126,11 @@ namespace Assets.Scripts.UI
             card.transform.SetParent(slot.transform);
             card.transform.localPosition = Vector3.zero;
             card.ParentLineUI = this;
+            card.transform.localScale = new Vector3(1, 1, 1);
 
             Cards.Add(card);
+
+            RecalculateSpacing();
         }
 
         /// <summary>
@@ -112,32 +151,8 @@ namespace Assets.Scripts.UI
                 Cards.Add(card);
             else
                 Cards.Insert(slotNumber, card);
-        }
 
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            isMouseOver = true;
-
-            CardUI card = MainUIController.CardBeingDraged;
-            if (card != null
-                && card.ParentLineUI != this
-                && card.PlayerIndicator == PlayerIndicator)
-            {
-                _outline.TurnPulsationOn();
-
-                // create empty
-                targetSlotIndicator = Instantiate(MainUIController.Instance.TargetSlotIndicatorPrefab, transform);
-            }
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            isMouseOver = false;
-
-            DestroyTargetSlotIndicator();
-
-            if (Outline)
-                _outline.TurnPulsationOff();
+            RecalculateSpacing();
         }
 
         public void DestroyTargetSlotIndicator()
@@ -152,6 +167,11 @@ namespace Assets.Scripts.UI
 
             Destroy(targetSlotIndicator);
             targetSlotIndicator = null;
+
+            RecalculateSpacing();
         }
+
+        void RecalculateSpacing() 
+            => _gridLayoutGroup.spacing = new Vector2((GameLogic.MAX_NUMBER_OF_CARDS_IN_LINE - Cards.Count) * 3, 0);
     }
 }
