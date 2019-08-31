@@ -1012,7 +1012,7 @@ PrefabInstance:
     - target: {fileID: 5686556799462812181, guid: 20a533f87a2154343909d1425042bb0b,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -150
+      value: -200
       objectReference: {fileID: 0}
     - target: {fileID: 5686556799462812181, guid: 20a533f87a2154343909d1425042bb0b,
         type: 3}
@@ -1022,12 +1022,12 @@ PrefabInstance:
     - target: {fileID: 5686556799462812181, guid: 20a533f87a2154343909d1425042bb0b,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 200
+      value: 300
       objectReference: {fileID: 0}
     - target: {fileID: 5686556799462812181, guid: 20a533f87a2154343909d1425042bb0b,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 100
+      value: 150
       objectReference: {fileID: 0}
     - target: {fileID: 5686556799462812181, guid: 20a533f87a2154343909d1425042bb0b,
         type: 3}
@@ -1068,6 +1068,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.y
       value: -20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8998885116684375125, guid: 20a533f87a2154343909d1425042bb0b,
+        type: 3}
+      propertyPath: m_enableAutoSizing
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 20a533f87a2154343909d1425042bb0b, type: 3}

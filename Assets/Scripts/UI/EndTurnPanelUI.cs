@@ -7,6 +7,8 @@ namespace Assets.Scripts.UI
     [DisallowMultipleComponent]
     public class EndTurnPanelUI : MonoBehaviour
     {
+        public bool Interactable => _endTurnButton.interactable;
+
         [SerializeField] Button _endTurnButton;
         [SerializeField] TextMeshProUGUI _infoText;
 

@@ -12,6 +12,7 @@ namespace Assets.Scripts
     public class MainUIController : MonoBehaviour, IMainUIController
     {
         public static MainUIController Instance;
+        public static readonly DummyDB DB = new DummyDB();
 
         // lines
         public LineUI TopDeck;
@@ -34,14 +35,11 @@ namespace Assets.Scripts
         public EndTurnPanelUI EndTurnPanel;
 
         public RectTransform ObjectDump;
-
         public VFXController VFXController;
 
         // canvases
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
-
-        public static readonly DummyDB DB = new DummyDB();
 
         public static Sprite[] Icons;
 
@@ -73,7 +71,8 @@ namespace Assets.Scripts
 
         void Update()
         {
-                
+            if(Input.GetKeyDown(KeyCode.Space) && EndTurnPanel.Interactable)
+                HandleEndTurnAction();
         }
         #endregion
 
@@ -86,7 +85,7 @@ namespace Assets.Scripts
             BlockDragAction = true;
         }
 
-        public void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        public async void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
         {
             #region Assertions
 #if UNITY_EDITOR
@@ -96,23 +95,57 @@ namespace Assets.Scripts
 
             CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, informGameLogic: true);
 
-            // if there are some skills to do, do them
+            // upper logic does not keep any data related to skills so we have to check in the DB
             CardData cardData = DB[movedCard.Id];
-            CardSkill skill = cardData.Skill;
-            if(skill != null)
+
+            // if there are any skills to do, do them
+            if (cardData.Skills.Count > 0)
             {
-                if(cardData.Skill.ExecutionMoment == CardSkillExecutionMoment.OnDeploy)
+                List<CardUI> targets = new List<CardUI>();
+
+                foreach (CardSkill skill in cardData.Skills) // no null check needed
                 {
-                    // movedCard.ParentLineUI.Cards
-                    VFXController.PlayCloud(movedCard.ParentLineUI.Cards);
+                    if (skill.ExecutionMoment == CardSkillExecutionMoment.OnDeploy)
+                    {
+                        VFXController.ScheduleParticleEffect(
+                            ParseCardSkillTarget(targetLine, targetSlotNumber, skill.Target),
+                            skill.VisualEffect);
+                    }
                 }
-                  // narazie wiadomo ze to jest smelly fish
+
+                await VFXController.PlayScheduledParticleEffects();
+
+                // apply the effects
+
             }
 
             // later on add some extra logic like check if all cards action are played or something like that
             EndTurnPanel.SetNothingElseToDo();
         }
         #endregion
+
+        List<CardUI> ParseCardSkillTarget(Line targetLine, int targetSlotNumber, CardSkillTarget target)
+        {
+            if (target == CardSkillTarget.CorrespondingEnemyLine)
+            {
+                // target line in this context is the deployment line
+                int correspondingLineID = 5 - (int)targetLine;
+                return _lines[correspondingLineID].Cards;
+            }
+
+            List<CardUI> cards = _lines[(int)targetLine].Cards;
+            if (target == CardSkillTarget.AllInLineExceptMe)
+                return cards.GetAllExceptOne(targetSlotNumber).ToList();
+            if (target == CardSkillTarget.LeftNeighbor)
+                return cards.GetLeftNeighbor(targetSlotNumber).ToList();
+            if(target == CardSkillTarget.BothNeighbors)
+                return cards.GetBothNeighbors(targetSlotNumber).ToList();
+            if (target == CardSkillTarget.RightNeighbor)
+                return cards.GetRightNeighbor(targetSlotNumber).ToList();
+
+            throw new System.Exception("Unreachable code reached! "
+                + "CardSkillTarget enumerator must have been extended without extending the ParseCardSkillTarget method logic.");
+        }
 
         void SpawnDeck(PlayerIndicator player, bool hidden)
         {
@@ -123,6 +156,8 @@ namespace Assets.Scripts
                 CreateUICardRepresentation(cardModel, player, hidden).UpdateStrengthText()));
         }
 
+        // this is some sort of a semi-constructor
+        // could be extracted out but that would require to have another class which I think is not worth it
         CardUI CreateUICardRepresentation(CardModel cardModel, PlayerIndicator player, bool hidden)
         {
             GameObject card = Instantiate(CardPrefab, transform);
@@ -180,7 +215,7 @@ namespace Assets.Scripts
             tLine.InsertCard(card, targetSlotNumber);
 
             if(informGameLogic)
-                _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform game logic
+                _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform internal game logic
 
             return card;
         }

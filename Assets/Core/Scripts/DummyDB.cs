@@ -1,5 +1,6 @@
 ﻿using Assets.Core.CardSkills;
 using Assets.Core.DataModel;
+using System.Collections.Generic;
 
 namespace Assets.Core
 {
@@ -17,11 +18,21 @@ namespace Assets.Core
                 2),
             new CardData(
                 "Smelly Fish",
-                "Stinks like a dumpster, when deployed inflicts 1 dmg to all units at your line and the corresponding enemy line.",
-                1)
-            {
-                Skill = new CardSkill(CardSkillExecutionMoment.OnDeploy, CardSkillExecutionControlType.Automatic)
-            },
+                "Stinks like a dumpster. When deployed inflicts 1 DMG to all units at your line (except the fish) and the corresponding enemy line.",
+                1,
+                new List<CardSkill>()
+                {
+                    new CardSkill(
+                        CardSkillExecutionMoment.OnDeploy, 
+                        CardSkillTarget.AllInLineExceptMe, 
+                        card => card.CurrentStrength--,
+                        VisualEffect.GreenCloud),
+                    new CardSkill(
+                        CardSkillExecutionMoment.OnDeploy, 
+                        CardSkillTarget.CorrespondingEnemyLine, 
+                        card => card.CurrentStrength--,
+                        VisualEffect.GreenCloud)
+                }),
             new CardData("Green Dude", "He can't do anything special but he is a decent warrior.", 3)
         };
     }

@@ -106,7 +106,7 @@ namespace Assets.Scripts.UI
             Destroy(child.gameObject);
 
             // all cards on the right must have their NumberInLine reduced by one
-            var cardsOnTheRight = Cards.TakeLast(Cards.Count - slotNumber - 1).ToList();
+            var cardsOnTheRight = Cards.GetLast(Cards.Count - slotNumber - 1).ToList();
             cardsOnTheRight.ForEach(c => c.SlotNumber--);
 
             Cards.RemoveAt(slotNumber);

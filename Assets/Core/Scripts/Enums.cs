@@ -18,5 +18,9 @@
 
     public enum CardSkillExecutionMoment { OnDeploy, EndOfTurn }
 
-    public enum CardSkillExecutionControlType { Automatic, Manual }
+    public enum CardSkillExecutionControlType { Automatic, Manual } // not used atm
+    
+    public enum CardSkillTarget { RightNeighbor, LeftNeighbor, BothNeighbors, AllInLineExceptMe, CorrespondingEnemyLine }
+
+    public enum VisualEffect { GreenCloud }
 }
