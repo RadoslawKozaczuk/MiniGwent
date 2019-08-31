@@ -34,7 +34,7 @@ namespace Assets.Core
         internal static readonly DummyDB DB = new DummyDB();
 
         bool _blockExternalCalls; // when AI is moving 
-        AI _ai;
+        readonly AI _ai;
         bool _isDirty;
 
         public GameLogic()

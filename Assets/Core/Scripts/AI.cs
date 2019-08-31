@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Assets.Core
 {
-    class AI
+    sealed class AI
     {
         PlayerIndicator _player;
         List<CardModel> _myDeck;
@@ -23,7 +23,7 @@ namespace Assets.Core
         }
 
         /// <summary>
-        /// If fakeThinking parameter is set to true, AI will wait certain amount of time [1-3]s before the execution continues.
+        /// If fakeThinking parameter is set to true, AI will wait certain amount of time [1-2]s before the execution continues.
         /// </summary>
         internal async void MakeMove(bool fakeThinking = true)
         {
@@ -43,7 +43,7 @@ namespace Assets.Core
             if(fakeThinking)
             {
                 // pretend it took you some time to come up with such amazing idea
-                int delay = Random.Range(1000, 3000);
+                int delay = Random.Range(1000, 2000);
                 var t = Task.Run(async delegate
                 {
                     await Task.Delay(delay);

@@ -65,7 +65,7 @@ namespace Assets.Scripts.UI
         /// <summary>
         /// This removes the slot container game object.
         /// </summary>
-        public void RemoveFromLine(int slotNumber, bool informInternalLogic)
+        public void RemoveFromLine(int slotNumber)
         {
             Transform child = transform.GetChild(slotNumber);
             child.SetParent(GameEngine.Instance.ObjectDump);
@@ -73,13 +73,9 @@ namespace Assets.Scripts.UI
 
             // all cards on the right must have their NumberInLine reduced by one
             var cardsOnTheRight = Cards.TakeLast(Cards.Count - slotNumber - 1).ToList();
-            cardsOnTheRight.ForEach(c => c.NumberInLine--);
+            cardsOnTheRight.ForEach(c => c.SlotNumber--);
 
             Cards.RemoveAt(slotNumber);
-
-            // inform the game logic about it
-            if(informInternalLogic)
-                GameEngine.Instance.GameLogic.RemoveCardFromLine(LineIndicator, slotNumber);
         }
 
         /// <summary>
@@ -88,7 +84,7 @@ namespace Assets.Scripts.UI
         /// </summary>
         public void InsertCard(CardUI card)
         {
-            card.NumberInLine = Cards.Count;
+            card.SlotNumber = Cards.Count;
 
             GameObject slot = Instantiate(GameEngine.Instance.CardContainerPrefab, transform);
             card.transform.SetParent(slot.transform);
@@ -110,7 +106,7 @@ namespace Assets.Scripts.UI
             card.transform.SetParent(slot.transform);
             card.transform.localPosition = Vector3.zero;
             card.ParentLineUI = this;
-            card.NumberInLine = Cards.Count;
+            card.SlotNumber = Cards.Count;
 
             if (slotNumber == Cards.Count)
                 Cards.Add(card);

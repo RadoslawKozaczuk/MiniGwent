@@ -184,7 +184,8 @@ MonoBehaviour:
   CardInfoPanel: {fileID: 6471947330621659823}
   EndGamePanel: {fileID: 7956121846737497801}
   BlackBackground: {fileID: 1547154122}
-  GameLogic: {fileID: 1275920312}
+  _gameLogic: {fileID: 1275920312}
+  EndTurnPanel: {fileID: 273641603}
   ObjectDump: {fileID: 251712244}
   MainCanvas: {fileID: 1062673708}
   SecondaryCanvas: {fileID: 1239584716}
@@ -229,6 +230,18 @@ RectTransform:
   m_AnchoredPosition: {x: 999, y: 999}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &273641603 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1480026379519366678, guid: 20a533f87a2154343909d1425042bb0b,
+    type: 3}
+  m_PrefabInstance: {fileID: 27081222691206329}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cc06103252b9704a8038ad554674734, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &406510929 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5920837650841429500, guid: aa69e3022ece27f42b05223e1ea537cd,
@@ -1071,16 +1084,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Pivot.y
       value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 27081223289155507, guid: 20a533f87a2154343909d1425042bb0b,
-        type: 3}
-      propertyPath: m_Interactable
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5844817100510259239, guid: 20a533f87a2154343909d1425042bb0b,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 20a533f87a2154343909d1425042bb0b, type: 3}

@@ -28,7 +28,8 @@ namespace Assets.Scripts
         public CardInfoUI CardInfoPanel;
         public EndGamePanelUI EndGamePanel;
         public GameObject BlackBackground;
-        public GameLogic GameLogic;
+        [SerializeField] GameLogic _gameLogic;
+        public EndTurnPanelUI EndTurnPanel;
 
         public RectTransform ObjectDump;
 
@@ -43,6 +44,8 @@ namespace Assets.Scripts
         public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
 
         LineUI[] _lines;
+
+        static public bool BlockDragAction;
 
         #region Unity life-cycle methods
         void Awake()
@@ -65,17 +68,35 @@ namespace Assets.Scripts
 
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.Space))
-            {
-                // give away control to AI
-                GameLogic.StartAITurn();
-            }
+                
         }
         #endregion
 
+        internal void HandleEndTurnAction()
+        {
+            EndTurnPanel.SetAiThinking();
+            _gameLogic.StartAITurn();
+
+            BlockDragAction = true;
+        }
+
+        internal void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        {
+#if UNITY_EDITOR
+            MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+#endif
+
+            MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+
+            _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform game logic
+
+            // later on add some extra logic like check if all cards action are played or something like that
+            EndTurnPanel.SetReady();
+        }
+
         void SpawnDeck(PlayerIndicator player, bool hidden)
         {
-            List<CardModel> cards = GameLogic.SpawnRandomDeck(player);
+            List<CardModel> cards = _gameLogic.SpawnRandomDeck(player);
             LineUI targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
 
             cards.ForEach(cardModel => targetLine.InsertCard(
@@ -107,8 +128,12 @@ namespace Assets.Scripts
         {
             MoveData move = eventArgs.LastMove;
 
-            if(move != null)
+            if (move != null)
+            {
                 MoveCard(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
+                EndTurnPanel.SetOff();
+                BlockDragAction = false;
+            }
 
             if(eventArgs.MessageType == GameLogicMessageType.GameOver)
             {
@@ -119,8 +144,23 @@ namespace Assets.Scripts
 
         void MoveCard(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
         {
-            #region Assertions
 #if UNITY_EDITOR
+            MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+#endif
+
+            LineUI fLine = _lines[(int)fromLine];
+            LineUI tLine = _lines[(int)targetLine];
+
+            CardUI card = fLine[fromSlotNumber];
+            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
+
+            fLine.RemoveFromLine(fromSlotNumber);
+            tLine.InsertCard(card, targetSlotNumber);
+        }
+
+#if UNITY_EDITOR
+        void MoveCardAssertions(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        {
             if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)
                 throw new System.ArgumentOutOfRangeException(
                     "fromSlotNumber",
@@ -146,19 +186,7 @@ namespace Assets.Scripts
                 &&
                 (targetLine == Line.BotDeck || targetLine == Line.BotBackline || targetLine == Line.BotFrontline))
                 throw new System.ArgumentException("Moving card from any top line to any bot line is not allowed.");
-#endif
-            #endregion
-
-            LineUI fLine = _lines[(int)fromLine];
-            LineUI tLine = _lines[(int)targetLine];
-
-            Debug.Log("fromSlot: " + fromSlotNumber + " fLine.count:" + fLine.Cards.Count);
-
-            CardUI card = fLine[fromSlotNumber];
-            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
-
-            fLine.RemoveFromLine(fromSlotNumber, false);
-            tLine.InsertCard(card, targetSlotNumber);
         }
+#endif
     }
 }

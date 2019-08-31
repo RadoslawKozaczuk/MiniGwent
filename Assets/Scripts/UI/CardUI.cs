@@ -49,7 +49,7 @@ namespace Assets.Scripts
         public Canvas secondaryCanvas;
 
         // this corresponds both to the sibling index on the line as well as the index in the table in GameLogic
-        public int NumberInLine;
+        public int SlotNumber;
 
         public int MaxStrength;
         public int CurrentStrength;
@@ -91,6 +91,9 @@ namespace Assets.Scripts
             if (!Draggable)
                 return;
 
+            if (GameEngine.BlockDragAction) // drag is blocked globally
+                return;
+
             _preDragLocation = transform.parent;
             
             // move to secondary canvas in order to be displayed always on top
@@ -113,22 +116,18 @@ namespace Assets.Scripts
                 return;
 
             LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();
-            if (targetLine && targetLine != ParentLineUI) // dropped on a line
+            if (targetLine 
+                && targetLine != ParentLineUI // not dropped on the same line
+                && PlayerIndicator == targetLine.PlayerIndicator) 
             {
-                // its important to copy these values as they may get changed in the methods below
-                Line parent = ParentLineUI.LineIndicator;
-                int fromSlotNumber = NumberInLine;
-                Line target = targetLine.LineIndicator;
-                int targetSlotNumber = targetLine.TargetSlotPositionNumber;
-
-                ParentLineUI.RemoveFromLine(fromSlotNumber, false);
-                targetLine.InsertCard(this, targetSlotNumber);
+                GameEngine.Instance.HandleInterfaceMoveCardRequest(
+                    ParentLineUI.LineIndicator, 
+                    SlotNumber, 
+                    targetLine.LineIndicator, 
+                    targetLine.TargetSlotPositionNumber);
 
                 // every card once moved becomes non drag-able anymore
                 Draggable = false;
-
-                // inform logic abut it
-                GameEngine.Instance.GameLogic.MoveCard(parent, fromSlotNumber, target, targetSlotNumber);
 
                 targetLine.DestroyTargetSlotIndicator();
             }
