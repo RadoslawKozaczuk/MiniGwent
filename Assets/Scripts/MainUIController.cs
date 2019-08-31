@@ -7,9 +7,9 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
-    public class GameEngine : MonoBehaviour
+    public class MainUIController : MonoBehaviour
     {
-        public static GameEngine Instance;
+        public static MainUIController Instance;
 
         // lines
         public LineUI TopDeck;
@@ -64,6 +64,7 @@ namespace Assets.Scripts
         {
             SpawnDeck(PlayerIndicator.Top, true);
             SpawnDeck(PlayerIndicator.Bot, false);
+            EndTurnPanel.SetYourTurn();
         }
 
         void Update()
@@ -91,7 +92,7 @@ namespace Assets.Scripts
             _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform game logic
 
             // later on add some extra logic like check if all cards action are played or something like that
-            EndTurnPanel.SetReady();
+            EndTurnPanel.SetNothingElseToDo();
         }
 
         void SpawnDeck(PlayerIndicator player, bool hidden)
@@ -131,7 +132,7 @@ namespace Assets.Scripts
             if (move != null)
             {
                 MoveCard(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
-                EndTurnPanel.SetOff();
+                EndTurnPanel.SetYourTurn();
                 BlockDragAction = false;
             }
 

@@ -10,10 +10,11 @@ namespace Assets.Scripts.UI
         [SerializeField] Button _endTurnButton;
         [SerializeField] TextMeshProUGUI _infoText;
 
-        readonly Color32 _cyan = new Color(0, 255, 235, 0); // cyan color
-        readonly Color32 _orange = new Color(255, 190, 0, 0); // cyan color
-        readonly string _nothingToDo = "Nothing else to do";
-        readonly string _aiIsThinking = "AI is thinking";
+        readonly Color32 _cyan = new Color(0, 255, 235, 255); // cyan color
+        readonly Color32 _orange = new Color(255, 190, 0, 255); // cyan color
+        readonly string _nothingElseToDo = "Nothing else to do...";
+        readonly string _aiIsThinking = "AI is thinking...";
+        readonly string _yourTurn = "Your turn";
 
         Color32 _color;
         bool _pulsating;
@@ -29,7 +30,7 @@ namespace Assets.Scripts.UI
         }
         #endregion
 
-        public void SetReady()
+        public void SetNothingElseToDo()
         {
             _color = _cyan;
 
@@ -37,7 +38,7 @@ namespace Assets.Scripts.UI
             _pulsating = true;
             _infoText.gameObject.SetActive(true);
 
-            _infoText.text = _nothingToDo;
+            _infoText.text = _nothingElseToDo;
         }
 
         public void SetAiThinking()
@@ -51,6 +52,17 @@ namespace Assets.Scripts.UI
             _infoText.text = _aiIsThinking;
         }
 
+        public void SetYourTurn()
+        {
+            _infoText.faceColor = _cyan;
+
+            _endTurnButton.interactable = false;
+            _pulsating = false;
+            _infoText.gameObject.SetActive(true);
+
+            _infoText.text = _yourTurn;
+        }
+
         public void SetOff()
         {
             _endTurnButton.interactable = false;
@@ -58,7 +70,7 @@ namespace Assets.Scripts.UI
             _infoText.gameObject.SetActive(false);
         }
 
-        public void EndTurnAction() => GameEngine.Instance.HandleEndTurnAction();
+        public void EndTurnAction() => MainUIController.Instance.HandleEndTurnAction();
 
         /// <summary>
         /// Returns values from 55 to 255 with interval of 1.57s

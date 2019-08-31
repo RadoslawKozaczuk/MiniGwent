@@ -7,7 +7,7 @@ namespace Assets.Core
 {
     sealed class AI
     {
-        PlayerIndicator _player;
+        PlayerIndicator _myIndicator;
         List<CardModel> _myDeck;
         List<CardModel> _myBackline;
         List<CardModel> _myFrontline;
@@ -15,7 +15,7 @@ namespace Assets.Core
 
         internal AI(PlayerIndicator player, List<CardModel> deck, List<CardModel> backline, List<CardModel> frontline, GameLogic gameLogic)
         {
-            _player = player;
+            _myIndicator = player;
             _myDeck = deck;
             _myBackline = backline;
             _myFrontline = frontline;
@@ -42,18 +42,18 @@ namespace Assets.Core
 
             if(fakeThinking)
             {
-                // pretend it took you some time to come up with such amazing idea
+                // pretend it took you some time to come up with such an amazing idea
                 int delay = Random.Range(1000, 2000);
                 var t = Task.Run(async delegate
                 {
                     await Task.Delay(delay);
-                    _gameLogic.MoveCard(_player, fromSlotNumber, line, targetSlotNumber);
+                    _gameLogic.MoveCard(_myIndicator, fromSlotNumber, line, targetSlotNumber);
                 });
 
                 await Task.WhenAll(t);
             }
             else
-                _gameLogic.MoveCard(_player, fromSlotNumber, line, targetSlotNumber);
+                _gameLogic.MoveCard(_myIndicator, fromSlotNumber, line, targetSlotNumber);
         }
     }
 }

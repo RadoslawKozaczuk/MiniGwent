@@ -40,8 +40,8 @@ namespace Assets.Scripts.UI
         void Update()
         {
             if (isMouseOver 
-                && GameEngine.CardBeingDraged 
-                && GameEngine.CardBeingDraged.ParentLineUI != this
+                && MainUIController.CardBeingDraged 
+                && MainUIController.CardBeingDraged.ParentLineUI != this
                 && targetSlotIndicator)
             {
                 TargetSlotPositionNumber = GetTargetSlotPositionNumber();
@@ -68,7 +68,7 @@ namespace Assets.Scripts.UI
         public void RemoveFromLine(int slotNumber)
         {
             Transform child = transform.GetChild(slotNumber);
-            child.SetParent(GameEngine.Instance.ObjectDump);
+            child.SetParent(MainUIController.Instance.ObjectDump);
             Destroy(child.gameObject);
 
             // all cards on the right must have their NumberInLine reduced by one
@@ -86,7 +86,7 @@ namespace Assets.Scripts.UI
         {
             card.SlotNumber = Cards.Count;
 
-            GameObject slot = Instantiate(GameEngine.Instance.CardContainerPrefab, transform);
+            GameObject slot = Instantiate(MainUIController.Instance.CardContainerPrefab, transform);
             card.transform.SetParent(slot.transform);
             card.transform.localPosition = Vector3.zero;
             card.ParentLineUI = this;
@@ -100,7 +100,7 @@ namespace Assets.Scripts.UI
         /// </summary>
         public void InsertCard(CardUI card, int slotNumber)
         {
-            GameObject slot = Instantiate(GameEngine.Instance.CardContainerPrefab, transform);
+            GameObject slot = Instantiate(MainUIController.Instance.CardContainerPrefab, transform);
             slot.transform.SetSiblingIndex(slotNumber);
 
             card.transform.SetParent(slot.transform);
@@ -118,7 +118,7 @@ namespace Assets.Scripts.UI
         {
             isMouseOver = true;
 
-            CardUI card = GameEngine.CardBeingDraged;
+            CardUI card = MainUIController.CardBeingDraged;
             if (card != null
                 && card.ParentLineUI != this
                 && card.PlayerIndicator == PlayerIndicator)
@@ -126,7 +126,7 @@ namespace Assets.Scripts.UI
                 _outline.TurnPulsationOn();
 
                 // create empty
-                targetSlotIndicator = Instantiate(GameEngine.Instance.TargetSlotIndicatorPrefab, transform);
+                targetSlotIndicator = Instantiate(MainUIController.Instance.TargetSlotIndicatorPrefab, transform);
             }
         }
 
@@ -146,7 +146,7 @@ namespace Assets.Scripts.UI
                 return;
 
             // remove from the horizontal group and move out of the map
-            Transform dump = GameEngine.Instance.ObjectDump.transform;
+            Transform dump = MainUIController.Instance.ObjectDump.transform;
             targetSlotIndicator.transform.SetParent(dump);
             targetSlotIndicator.transform.position = dump.position;
 

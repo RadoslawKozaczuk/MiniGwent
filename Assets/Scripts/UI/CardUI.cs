@@ -72,18 +72,18 @@ namespace Assets.Scripts
         public void OnPointerEnter(PointerEventData eventData)
         {
             // if nothing is being dragged
-            if(!GameEngine.CardBeingDraged && !_hidden)
+            if(!MainUIController.CardBeingDraged && !_hidden)
             {
                 OutlineController.TurnPulsationOn();
-                GameEngine.Instance.CardInfoPanel.gameObject.SetActive(true);
-                GameEngine.Instance.CardInfoPanel.LoadDataForId(Id);
+                MainUIController.Instance.CardInfoPanel.gameObject.SetActive(true);
+                MainUIController.Instance.CardInfoPanel.LoadDataForId(Id);
             }
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             OutlineController.TurnPulsationOff();
-            GameEngine.Instance.CardInfoPanel.gameObject.SetActive(false);
+            MainUIController.Instance.CardInfoPanel.gameObject.SetActive(false);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -91,7 +91,7 @@ namespace Assets.Scripts
             if (!Draggable)
                 return;
 
-            if (GameEngine.BlockDragAction) // drag is blocked globally
+            if (MainUIController.BlockDragAction) // drag is blocked globally
                 return;
 
             _preDragLocation = transform.parent;
@@ -99,7 +99,7 @@ namespace Assets.Scripts
             // move to secondary canvas in order to be displayed always on top
             transform.SetParent(secondaryCanvas.transform, true);
 
-            GameEngine.CardBeingDraged = this;
+            MainUIController.CardBeingDraged = this;
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -120,7 +120,7 @@ namespace Assets.Scripts
                 && targetLine != ParentLineUI // not dropped on the same line
                 && PlayerIndicator == targetLine.PlayerIndicator) 
             {
-                GameEngine.Instance.HandleInterfaceMoveCardRequest(
+                MainUIController.Instance.HandleInterfaceMoveCardRequest(
                     ParentLineUI.LineIndicator, 
                     SlotNumber, 
                     targetLine.LineIndicator, 
@@ -137,7 +137,7 @@ namespace Assets.Scripts
                 transform.localPosition = Vector3.zero; // go back where you were
             }
 
-            GameEngine.CardBeingDraged = null;
+            MainUIController.CardBeingDraged = null;
         }
         #endregion
     }

@@ -15,11 +15,11 @@ namespace Assets.Scripts.UI
 
         public void LoadDataForId(int id)
         {
-            CardData data = GameEngine.DB[id];
+            CardData data = MainUIController.DB[id];
             _title.text = data.Title;
             _description.text = data.Description;
             _strength.text = "STR: " + data.Strength;
-            _portrait.sprite = GameEngine.Icons[id];
+            _portrait.sprite = MainUIController.Icons[id];
         }
     }
 }
