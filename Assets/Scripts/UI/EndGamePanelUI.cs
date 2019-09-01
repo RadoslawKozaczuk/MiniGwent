@@ -21,19 +21,19 @@ namespace Assets.Scripts.UI
             {
                 _title.text = "<color=red>Defeat</color>";
                 _whoWon.text = "AI killed you!";
-                _score.text = $"{botStrength} - <color=orange>{topStrength}</color>";
+                _score.text = $"{botStrength} - <color=green>{topStrength}</color>";
             }
             else if (topStrength == botStrength)
             {
-                _title.text = "<color=orange>Draw</color>";
-                _whoWon.text = "Both sides equally good.";
+                _title.text = "<color=yellow>Draw</color>";
+                _whoWon.text = "Both sides fought well.";
                 _score.text = $"{botStrength} - {topStrength}";
             }
             else
             {
                 _title.text = "<color=green>Victory</color>";
                 _whoWon.text = "Player's Victory!";
-                _score.text = $"<color=orange>{botStrength}</color> - {topStrength}";
+                _score.text = $"<color=green>{botStrength}</color> - {topStrength}";
             }
         }
     }

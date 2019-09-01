@@ -12,8 +12,8 @@ namespace Assets.Core
         public GameLogicMessageType MessageType;
         public MoveData LastMove;
         public string CurrentStatus;
-        public int OverallTopStrength;
-        public int OverallBotStrength;
+        public int TopTotalStrength;
+        public int BotTotalStrength;
         public List<List<int>> CardStrengths;
 
         public (Line targetLine, int targetSlot) SkillTarget;

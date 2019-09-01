@@ -19,8 +19,8 @@ namespace Assets.Scripts.UI
                 + Environment.NewLine
                 + eventArgs.CurrentStatus
                 + Environment.NewLine
-                + "Top Strength: " + eventArgs.OverallTopStrength
+                + "Top Strength: " + eventArgs.TopTotalStrength
                 + Environment.NewLine
-                + "Bot Strength: " + eventArgs.OverallBotStrength;
+                + "Bot Strength: " + eventArgs.BotTotalStrength;
     }
 }

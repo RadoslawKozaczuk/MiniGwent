@@ -5,7 +5,6 @@ using System.Text;
 using System.Linq;
 using UnityEngine;
 using Assets.Core.CardSkills;
-using System.Threading.Tasks;
 
 namespace Assets.Core
 { 
@@ -20,6 +19,9 @@ namespace Assets.Core
         /// </summary>
         public static event EventHandler<GameLogicStatusChangedEventArgs> GameLogicStatusChangedEventHandler;
 
+        int TopTotalStrength => TopBackline.Sum(c => c.CurrentStrength) + TopFrontline.Sum(c => c.CurrentStrength);
+        int BotTotalStrength => BotBackline.Sum(c => c.CurrentStrength) + BotFrontline.Sum(c => c.CurrentStrength);
+
         readonly List<CardModel> TopDeck = new List<CardModel>();
         readonly List<CardModel> TopBackline = new List<CardModel>();
         readonly List<CardModel> TopFrontline = new List<CardModel>();
@@ -31,24 +33,10 @@ namespace Assets.Core
 
         public MoveData LastAIMove;
 
-        int TopStrength;
-        int BotStrength;
-
         internal static readonly DummyDB DB = new DummyDB();
 
         bool _blockExternalCalls; // when AI is moving 
         readonly AI _ai;
-        bool _isDirty;
-
-        bool _waitingForUpperLogicResponse;
-        public bool WaitingForUpperLogicResponse
-        {
-            get => _waitingForUpperLogicResponse;
-            set
-            {
-                _waitingForUpperLogicResponse = value;
-            }
-        }
 
         public GameLogic()
         {
@@ -56,28 +44,15 @@ namespace Assets.Core
             _ai = new AI(PlayerIndicator.Top, TopDeck, TopBackline, TopFrontline, this, true);
         }
 
-        void Update()
-        {
-            if (_waitingForUpperLogicResponse)
-                return;
-
-            // proceed with something
-        }
-
-        void LateUpdate()
-        {
-            if(_isDirty)
-            {
-                UpdateStrengths();
-                BroadcastGameLogicStatusChanged();
-
-                _isDirty = false;
-            }
-        }
-
         public void StartAITurn()
         {
-            _ai.StartAITurn();
+            if(TopDeck.Count == 0)
+            {
+                // AI has nothing else to do
+                BroadcastGameOver(); // for now player always plays first so we can safely broadcast game over here
+            }
+            else
+                _ai.StartAITurn();
         }
 
         public void ControlReturn()
@@ -93,7 +68,6 @@ namespace Assets.Core
         public void RemoveCardFromLine(Line targetLine, int cardNumber)
         {
             _lines[(int)targetLine].RemoveAt(cardNumber);
-            _isDirty = true;
         }
 
         /// <summary>
@@ -200,8 +174,6 @@ namespace Assets.Core
                 tLine.Add(card);
             else
                 tLine.Insert(targetSlotNumber, card);
-
-            _isDirty = true;
         }
 
         void RemoveDeadOnes()
@@ -276,8 +248,6 @@ namespace Assets.Core
                 targetLine.Add(card);
             }
 
-            _isDirty = true;
-
             return new List<CardModel>(targetLine); // encapsulation
         }
 
@@ -294,44 +264,6 @@ namespace Assets.Core
             }
 
             return sb.ToString();
-        }
-
-        void UpdateStrengths()
-        {
-            TopStrength = TopBackline.Sum(c => c.CurrentStrength) + TopFrontline.Sum(c => c.CurrentStrength);
-            BotStrength = BotBackline.Sum(c => c.CurrentStrength) + BotFrontline.Sum(c => c.CurrentStrength);
-        }
-
-        // we call the event - if there is no subscribers we will get a null exception error therefore we use a safe call (null check)
-        void BroadcastGameLogicStatusChanged()
-        {
-            Debug.Log("GameLogic broadcasted the event.");
-
-            // create a list of lists
-            var currentStrengths = new List<List<int>>(4); // size of 4 because we don't need to send decks
-            for (int i = 1; i < _lines.Length - 1; i++)
-            {
-                var line = new List<int>();
-                _lines[i].ForEach(model => line.Add(model.CurrentStrength));
-                currentStrengths.Add(line);
-            }
-
-            //var args = new GameLogicStatusChangedEventArgs(GetCurrentStatus(), TopStrength, BotStrength, currentStrengths);
-
-            //LastAIMove = null;
-
-            //// sprawdz czy zostaly ruchy
-            //if (TopDeck.Count == 0 && BotDeck.Count == 0)
-            //{
-            //    // game over
-            //    args.MessageType = GameLogicMessageType.GameOver;
-            //}
-            //else
-            //{
-            //    args.MessageType = GameLogicMessageType.CardMoved;
-            //}
-
-            //GameLogicStatusChangedEventHandler?.Invoke(this, args);
         }
 
         public List<List<int>> GetCardStrengths()
@@ -375,7 +307,22 @@ namespace Assets.Core
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength) { CardStrengths = GetCardStrengths() });
 
         internal void BroadcastEndTurn()
-            => GameLogicStatusChangedEventHandler?.Invoke(this, new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn));
+            => GameLogicStatusChangedEventHandler?.Invoke(
+                this, 
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn)
+                {
+                    TopTotalStrength = TopTotalStrength,
+                    BotTotalStrength = BotTotalStrength
+                });
+
+        internal void BroadcastGameOver()
+            => GameLogicStatusChangedEventHandler?.Invoke(
+                this, 
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.GameOver)
+                {
+                     TopTotalStrength = TopTotalStrength,
+                     BotTotalStrength = BotTotalStrength
+                });
 
         #region Assertions
 #if UNITY_EDITOR

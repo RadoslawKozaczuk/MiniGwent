@@ -42,7 +42,7 @@ namespace Assets.Scripts
         public Image Image;
         public int Id;
         public int DefaultStrength;
-
+        
         /// <summary>
         /// Indicates whether that card should be able to be dragged.
         /// </summary>
@@ -50,7 +50,7 @@ namespace Assets.Scripts
 
         [SerializeField] GameObject _front;
         [SerializeField] GameObject _back;
-        [SerializeField] TextMeshProUGUI _titleText;
+        public TextMeshProUGUI TitleText;
         [SerializeField] TextMeshProUGUI _stengthText;
         [SerializeField] OutlineController _outlineController;
 
@@ -84,10 +84,7 @@ namespace Assets.Scripts
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (!Draggable)
-                return;
-
-            if (MainUIController.BlockDragAction) // drag is blocked globally
+            if (!Draggable || MainUIController.BlockDragAction)
                 return;
 
             _preDragLocation = transform.parent;
@@ -100,7 +97,7 @@ namespace Assets.Scripts
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (!Draggable)
+            if (!Draggable || MainUIController.BlockDragAction)
                 return;
 
             transform.localPosition = secondaryCanvas.ScreenToCanvasPosition(Input.mousePosition);
@@ -108,7 +105,7 @@ namespace Assets.Scripts
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!Draggable)
+            if (!Draggable || MainUIController.BlockDragAction)
                 return;
 
             LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();
@@ -137,7 +134,7 @@ namespace Assets.Scripts
         }
         #endregion
 
-        CardUI UpdateStrengthText()
+        void UpdateStrengthText()
         {
             if (CurrentStrength < DefaultStrength)
                 _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
@@ -145,8 +142,6 @@ namespace Assets.Scripts
                 _stengthText.text = $"STR: {CurrentStrength}";
             else
                 _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
-
-            return this; // return this to allow method chaining
         }
     }
 }

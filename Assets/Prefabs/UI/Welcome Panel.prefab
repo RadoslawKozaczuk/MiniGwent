@@ -1976,6 +1976,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9228c2d067b89542b1cc1ae2fb3b6e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _botPlayerDropdown: {fileID: 5381612748529420834}
+  _mainUIController: {fileID: 0}
 --- !u!1 &5381612749680201022
 GameObject:
   m_ObjectHideFlags: 0

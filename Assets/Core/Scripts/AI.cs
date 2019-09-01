@@ -21,7 +21,7 @@ namespace Assets.Core
         readonly GameLogic _gameLogic;
         readonly bool _fakeThinking;
 
-        // things to do
+        // each turn AI creates a list of tasks and then executes them one by one
         readonly Queue<Action> _taskQueue = new Queue<Action>();
 
         internal AI(PlayerIndicator player, List<CardModel> deck, List<CardModel> backline, 
@@ -39,29 +39,31 @@ namespace Assets.Core
         {
             _taskQueue.Clear();
 
-            Task<MoveData> task = CalculateBestMove(); // this already starts
-
+            Task<MoveData> task = CalculateBestMove(); // this already starts the task
             await Task.WhenAll(task);
 
             MoveData move = task.Result;
             _gameLogic.MoveCardForAI(move); // you moved this card
-            // upper logic knows nothing at this point
+            // upper logic knows nothing at this point yet
             
             // create the rest of the plan
             CardSkill skill = GameLogic.DB[move.Card.CardId].Skill;
             if(skill != null)
             {
+                // upon execution the upper logic should start playing skill animation
                 _taskQueue.Enqueue(() => PlaySkillVFX(skill, move.TargetLine, move.TargetSlotNumber));
-                // upper logic should play skill animation now
 
+                // upon execution the upper logic should apply skill effect
                 _taskQueue.Enqueue(() => ApplySkill(skill, move.TargetLine, move.TargetSlotNumber));
-                // upper logic should 
             }
 
+            // upon execution the upper logic should update card strengths
             _taskQueue.Enqueue(UpdateStrength);
+
+            // upon execution the upper logic should give away the control to other player (human or AI)
             _taskQueue.Enqueue(EndTurn);
 
-            // inform the upper logic about this move
+            // inform the upper logic about the card move you have done
             _gameLogic.BroadcastMoveCard(move);
         }
 
@@ -72,7 +74,8 @@ namespace Assets.Core
         }
 
         /// <summary>
-        /// If fakeThinking parameter is set to true, AI will wait certain amount of time [1-2]s before the execution continues.
+        /// If fakeThinking parameter is true, AI will wait random amount of time 
+        /// between MIN_THINKING_TIME and MAX_THINKING_TIME measured in milliseconds before the execution continues.
         /// </summary>
         internal async Task<MoveData> CalculateBestMove()
         {

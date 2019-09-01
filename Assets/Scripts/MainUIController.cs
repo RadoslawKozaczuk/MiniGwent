@@ -33,7 +33,11 @@ namespace Assets.Scripts
         public EndGamePanelUI EndGamePanel;
         public GameObject BlackBackground;
         [SerializeField] GameLogic _gameLogic;
-        public EndTurnPanelUI EndTurnPanel;
+
+        [SerializeField] StatusPanelUI _statusPanel;
+        [SerializeField] GameObject _linesGroup;
+        [SerializeField] EndTurnPanelUI _endTurnPanel;
+
 
         public RectTransform ObjectDump;
         public VFXController VFXController;
@@ -63,16 +67,25 @@ namespace Assets.Scripts
             GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
         }
 
-        void Start()
+        public void StartGame()
         {
+            _statusPanel.gameObject.SetActive(true);
+            _linesGroup.gameObject.SetActive(true);
+            _endTurnPanel.gameObject.SetActive(true);
+
             SpawnDeck(PlayerIndicator.Top, true);
             SpawnDeck(PlayerIndicator.Bot, false);
-            EndTurnPanel.SetYourTurn();
+            _endTurnPanel.SetYourTurn();
+        }
+
+        void Start()
+        {
+            
         }
 
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.Space) && EndTurnPanel.Interactable)
+            if(Input.GetKeyDown(KeyCode.Space) && _endTurnPanel.Interactable)
                 HandleEndTurnAction();
         }
         #endregion
@@ -80,7 +93,7 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void HandleEndTurnAction()
         {
-            EndTurnPanel.SetAiThinking();
+            _endTurnPanel.SetAiThinking();
             _gameLogic.StartAITurn();
 
             BlockDragAction = true;
@@ -102,7 +115,9 @@ namespace Assets.Scripts
             _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
             // later on add some extra logic like check if all cards action are played or something like that
-            EndTurnPanel.SetNothingElseToDo();
+            _endTurnPanel.SetNothingElseToDo();
+
+            BlockDragAction = true;
         }
         #endregion
 
@@ -149,6 +164,7 @@ namespace Assets.Scripts
             ui.mainCanvas = MainCanvas;
             ui.secondaryCanvas = SecondaryCanvas;
             ui.Image.sprite = Icons[cardModel.CardId];
+            ui.TitleText.text = DB[cardModel.CardId].Title;
 
             ui.DefaultStrength = cardModel.DefaultStrength;
             ui.CurrentStrength = cardModel.DefaultStrength;
@@ -207,16 +223,28 @@ namespace Assets.Scripts
             // AI informs me that its turn has ended
             else if(eventArgs.MessageType == GameLogicMessageType.EndTurn)
             {
-                EndTurnPanel.SetYourTurn();
-                BlockDragAction = false;
+                if(BotDeck.Count == 0) // nothing else to play
+                {
+                    GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
+                }
+                else
+                {
+                    _endTurnPanel.SetYourTurn();
+                    BlockDragAction = false;
+                }
             }
 
             // AI informs me that the game is over
             else if(eventArgs.MessageType == GameLogicMessageType.GameOver)
             {
-                BlackBackground.SetActive(true);
-                EndGamePanel.SetData(eventArgs.OverallTopStrength, eventArgs.OverallBotStrength);
+                GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
             }
+        }
+
+        void GameOver(int topStrength, int botStrength)
+        {
+            BlackBackground.SetActive(true);
+            EndGamePanel.SetData(topStrength, botStrength);
         }
 
         CardUI MoveCardOnUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
