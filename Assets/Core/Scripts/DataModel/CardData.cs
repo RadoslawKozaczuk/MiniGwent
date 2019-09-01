@@ -5,14 +5,14 @@ namespace Assets.Core.DataModel
 {
     public class CardData
     {
-        public readonly List<CardSkill> Skills;
+        public readonly CardSkill Skill;
         public readonly string Title;
         public readonly string Description;
         public readonly int Strength;
 
-        public CardData(string title, string description, int strength, List<CardSkill> skills = null)
+        public CardData(string title, string description, int strength, CardSkill skill = null)
         {
-            Skills = skills ?? new List<CardSkill>(0);
+            Skill = skill;
             Title = title;
             Description = description;
             Strength = strength;

@@ -93,40 +93,38 @@ namespace Assets.Scripts
 #endif
             #endregion
 
-            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, informGameLogic: true);
+            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, informGameLogic: false);
 
             // upper logic does not keep any data related to skills so we have to check in the DB
             CardData cardData = DB[movedCard.Id];
+            CardSkill skill = cardData.Skill;
 
             // if there are any skills to do, do them
-            if (cardData.Skills.Count > 0)
+            if (skill != null)
             {
-                List<CardUI> targets = new List<CardUI>();
-
-                foreach (CardSkill skill in cardData.Skills) // no null check needed
+                var targets = new List<CardUI>();
+                if (skill.ExecutionTime == SkillExecutionTime.OnDeploy)
                 {
-                    if (skill.ExecutionMoment == CardSkillExecutionMoment.OnDeploy)
-                    {
-                        VFXController.ScheduleParticleEffect(
-                            ParseCardSkillTarget(targetLine, targetSlotNumber, skill.Target),
-                            skill.VisualEffect);
-                    }
+                    foreach(SkillTarget target in skill.Targets)
+                        targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
+
+                    VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
+
+                    await VFXController.PlayScheduledParticleEffects();
                 }
-
-                await VFXController.PlayScheduledParticleEffects();
-
-                // apply the effects
-
             }
+
+            // apply the effects - this will also apply card skill effects if any
+            _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
             // later on add some extra logic like check if all cards action are played or something like that
             EndTurnPanel.SetNothingElseToDo();
         }
         #endregion
 
-        List<CardUI> ParseCardSkillTarget(Line targetLine, int targetSlotNumber, CardSkillTarget target)
+        List<CardUI> ParseCardSkillTarget(Line targetLine, int targetSlotNumber, SkillTarget target)
         {
-            if (target == CardSkillTarget.CorrespondingEnemyLine)
+            if (target == SkillTarget.CorrespondingEnemyLine)
             {
                 // target line in this context is the deployment line
                 int correspondingLineID = 5 - (int)targetLine;
@@ -134,13 +132,13 @@ namespace Assets.Scripts
             }
 
             List<CardUI> cards = _lines[(int)targetLine].Cards;
-            if (target == CardSkillTarget.AllInLineExceptMe)
+            if (target == SkillTarget.AllInLineExceptMe)
                 return cards.GetAllExceptOne(targetSlotNumber).ToList();
-            if (target == CardSkillTarget.LeftNeighbor)
+            if (target == SkillTarget.LeftNeighbor)
                 return cards.GetLeftNeighbor(targetSlotNumber).ToList();
-            if(target == CardSkillTarget.BothNeighbors)
+            if(target == SkillTarget.BothNeighbors)
                 return cards.GetBothNeighbors(targetSlotNumber).ToList();
-            if (target == CardSkillTarget.RightNeighbor)
+            if (target == SkillTarget.RightNeighbor)
                 return cards.GetRightNeighbor(targetSlotNumber).ToList();
 
             throw new System.Exception("Unreachable code reached! "
@@ -153,7 +151,7 @@ namespace Assets.Scripts
             LineUI targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
 
             cards.ForEach(cardModel => targetLine.InsertCard(
-                CreateUICardRepresentation(cardModel, player, hidden).UpdateStrengthText()));
+                CreateUICardRepresentation(cardModel, player, hidden)));
         }
 
         // this is some sort of a semi-constructor
@@ -168,7 +166,7 @@ namespace Assets.Scripts
             ui.secondaryCanvas = SecondaryCanvas;
             ui.Image.sprite = Icons[cardModel.CardId];
 
-            ui.MaxStrength = cardModel.DefaultStrength;
+            ui.DefaultStrength = cardModel.DefaultStrength;
             ui.CurrentStrength = cardModel.DefaultStrength;
 
             ui.Hidden = hidden;
@@ -194,6 +192,14 @@ namespace Assets.Scripts
             {
                 BlackBackground.SetActive(true);
                 EndGamePanel.SetData(eventArgs.OverallTopStrength, eventArgs.OverallBotStrength);
+            }
+
+            // apply logic changes
+            for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
+            {
+                List<CardUI> cards = _lines[i].Cards;
+                for (int j = 0; j < cards.Count; j++)
+                    cards[j].CurrentStrength = eventArgs.CurrentCardStrengths[i - 1][j]; // minus 1 because logic omit decks while sending
             }
         }
 

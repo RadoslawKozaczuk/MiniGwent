@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using UnityEngine;
+using Assets.Core.CardSkills;
 
 namespace Assets.Core
 { 
@@ -153,7 +154,46 @@ namespace Assets.Core
             else
                 tLine.Insert(targetSlotNumber, card);
 
+            ApplySkillEffectIfAny(card, targetLine, targetSlotNumber);
+
             _isDirty = true;
+        }
+
+        void ApplySkillEffectIfAny(CardModel card, Line deployLine, int slotNumber)
+        {
+            CardSkill skill = DB[card.CardId].Skill;
+            if (skill != null)
+            {
+                var targets = new List<CardModel>();
+
+                foreach (SkillTarget target in skill.Targets)
+                    targets.AddRange(ParseCardSkillTarget(deployLine, slotNumber, target));
+
+                foreach (CardModel target in targets)
+                    skill.Effect(target);
+            }
+        }
+
+        List<CardModel> ParseCardSkillTarget(Line targetLine, int targetSlotNumber, SkillTarget target)
+        {
+            if (target == SkillTarget.CorrespondingEnemyLine)
+            {
+                int correspondingLineID = 5 - (int)targetLine;
+                return _lines[correspondingLineID];
+            }
+
+            List<CardModel> cards = _lines[(int)targetLine];
+            if (target == SkillTarget.AllInLineExceptMe)
+                return cards.GetAllExceptOne(targetSlotNumber).ToList();
+            if (target == SkillTarget.LeftNeighbor)
+                return cards.GetLeftNeighbor(targetSlotNumber).ToList();
+            if (target == SkillTarget.BothNeighbors)
+                return cards.GetBothNeighbors(targetSlotNumber).ToList();
+            if (target == SkillTarget.RightNeighbor)
+                return cards.GetRightNeighbor(targetSlotNumber).ToList();
+
+            throw new Exception("Unreachable code reached! "
+                + "CardSkillTarget enumerator must have been extended without extending the ParseCardSkillTarget method logic.");
         }
 
         /// <summary>
@@ -198,7 +238,19 @@ namespace Assets.Core
         // we call the event - if there is no subscribers we will get a null exception error therefore we use a safe call (null check)
         void BroadcastGameLogicStatusChanged()
         {
-            var args = new GameLogicStatusChangedEventArgs(GetCurrentStatus(), TopStrength, BotStrength, LastAIMove); ;
+            Debug.Log("GameLogic broad casted the event.");
+
+            // create a list of lists
+            var currentStrengths = new List<List<int>>(4); // size of 4 because we don't need to send decks
+            for(int i = 1; i < _lines.Length - 1; i++)
+            {
+                var line = new List<int>();
+                _lines[i].ForEach(model => line.Add(model.CurrentStrength));
+                currentStrengths.Add(line);
+            }
+
+            var args = new GameLogicStatusChangedEventArgs(
+                GetCurrentStatus(), TopStrength, BotStrength, LastAIMove, currentStrengths);
 
             LastAIMove = null;
 

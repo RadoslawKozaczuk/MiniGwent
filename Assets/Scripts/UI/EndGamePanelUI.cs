@@ -19,21 +19,18 @@ namespace Assets.Scripts.UI
 
             if(topStrength > botStrength)
             {
-                // topinio won
                 _title.text = "<color=red>Defeat</color>";
                 _whoWon.text = "AI killed you!";
                 _score.text = $"{botStrength} - <color=orange>{topStrength}</color>";
             }
             else if (topStrength == botStrength)
             {
-                // draw
                 _title.text = "<color=orange>Draw</color>";
                 _whoWon.text = "Both sides equally good.";
                 _score.text = $"{botStrength} - {topStrength}";
             }
             else
             {
-                // botinio won
                 _title.text = "<color=green>Victory</color>";
                 _whoWon.text = "Player's Victory!";
                 _score.text = $"<color=orange>{botStrength}</color> - {topStrength}";

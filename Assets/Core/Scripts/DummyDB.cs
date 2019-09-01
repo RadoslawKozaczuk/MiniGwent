@@ -12,28 +12,27 @@ namespace Assets.Core
 
         static readonly CardData[] _cards = new CardData[]
         {
+            // I added param names for readability (thx to that it looks more like JSON)
             new CardData(
-                "Dog",
-                "Likes to chase mailmen. Once a turn he attacks first enemy unit that goes from frontline to backline inflicting 1 dmg.",
-                2),
+                title: "Dog",
+                description: "Likes to chase mailmen. "
+                    + "Once a turn he attacks first enemy unit that goes from frontline to backline inflicting 1 DMG.",
+                strength: 2),
             new CardData(
-                "Smelly Fish",
-                "Stinks like a dumpster. When deployed inflicts 1 DMG to all units at your line (except the fish) and the corresponding enemy line.",
-                1,
-                new List<CardSkill>()
-                {
-                    new CardSkill(
-                        CardSkillExecutionMoment.OnDeploy, 
-                        CardSkillTarget.AllInLineExceptMe, 
-                        card => card.CurrentStrength--,
-                        VisualEffect.GreenCloud),
-                    new CardSkill(
-                        CardSkillExecutionMoment.OnDeploy, 
-                        CardSkillTarget.CorrespondingEnemyLine, 
-                        card => card.CurrentStrength--,
-                        VisualEffect.GreenCloud)
-                }),
-            new CardData("Green Dude", "He can't do anything special but he is a decent warrior.", 3)
+                title: "Smelly Fish",
+                description: "Stinks like a dumpster. "
+                    + "When deployed inflicts 1 DMG to all units at your line (except the fish itself) and the corresponding enemy line.",
+                strength: 1,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeploy, 
+                    targets: new List<SkillTarget> { SkillTarget.AllInLineExceptMe, SkillTarget.CorrespondingEnemyLine }, 
+                    effect: card => card.CurrentStrength--,
+                    visualEffect: SkillVisualEffect.GreenCloud)
+                ),
+            new CardData(
+                title: "Green Dude", 
+                description: "He can't do anything special but he is a decent warrior.", 
+                strength: 3)
         };
     }
 }

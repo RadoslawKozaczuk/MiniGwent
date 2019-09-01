@@ -6,11 +6,13 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
+    [DisallowMultipleComponent]
     public class VFXController : MonoBehaviour
     {
-        const int VFX_DURATION = 2500;
+        [Tooltip("In milliseconds")]
+        [SerializeField] int _vfxDuration = 2500;
+        [SerializeField] GameObject[] _effects;
 
-        public GameObject[] Effects;
         readonly List<GameObject> _instanciatedEffects = new List<GameObject>();
 
         /// <summary>
@@ -19,7 +21,7 @@ namespace Assets.Scripts
         /// Effects remain inactive until played.
         /// All effects are of the same given type.
         /// </summary>
-        public void ScheduleParticleEffect(List<CardUI> cards, VisualEffect visualEffect)
+        public void ScheduleParticleEffect(List<CardUI> cards, SkillVisualEffect visualEffect)
         {
             foreach (CardUI card in cards)
                 InstanciateEffect(card.transform, visualEffect);
@@ -36,7 +38,7 @@ namespace Assets.Scripts
             foreach (GameObject instance in _instanciatedEffects)
                 instance.SetActive(true);
 
-            await Task.Delay(VFX_DURATION);
+            await Task.Delay(_vfxDuration);
 
             foreach (GameObject instance in _instanciatedEffects)
             {
@@ -47,9 +49,9 @@ namespace Assets.Scripts
             _instanciatedEffects.Clear();
         }
 
-        void InstanciateEffect(Transform position, VisualEffect effect)
+        void InstanciateEffect(Transform position, SkillVisualEffect effect)
         {
-            var instance = Instantiate(Effects[(int)effect], position);
+            var instance = Instantiate(_effects[(int)effect], position);
             instance.SetActive(false);
             _instanciatedEffects.Add(instance);
 

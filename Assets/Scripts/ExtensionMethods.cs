@@ -9,6 +9,7 @@ namespace Assets.Scripts
             var viewportPosition = new Vector3(screenPosition.x / Screen.width,
                                                screenPosition.y / Screen.height,
                                                0);
+
             return canvas.ViewportToCanvasPosition(viewportPosition);
         }
 

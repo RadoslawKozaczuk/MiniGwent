@@ -13,9 +13,9 @@ namespace Assets.Scripts.UI
         [SerializeField] TextMeshProUGUI _infoText;
 
         readonly Color32 _cyan = new Color(0, 255, 235, 255); // cyan color
-        readonly Color32 _orange = new Color(255, 190, 0, 255); // cyan color
-        readonly string _nothingElseToDo = "Nothing else to do...";
-        readonly string _aiIsThinking = "AI is thinking...";
+        readonly Color32 _orange = new Color(255, 190, 0, 255); // orange color
+        readonly string _nothingElseToDo = "Nothing else to do... \n(Press space to end turn)";
+        readonly string _aiIsThinking = "AI is thinking hard...";
         readonly string _yourTurn = "Your turn";
 
         Color32 _color;

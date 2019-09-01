@@ -16,11 +16,11 @@
 
     public enum GameLogicMessageType { Normal, GameOver }
 
-    public enum CardSkillExecutionMoment { OnDeploy, EndOfTurn }
+    public enum SkillExecutionTime { OnDeploy, EndOfTurn }
 
-    public enum CardSkillExecutionControlType { Automatic, Manual } // not used atm
+    public enum SkillExecutionControlType { Automatic, Manual } // not used atm
     
-    public enum CardSkillTarget { RightNeighbor, LeftNeighbor, BothNeighbors, AllInLineExceptMe, CorrespondingEnemyLine }
+    public enum SkillTarget { RightNeighbor, LeftNeighbor, BothNeighbors, AllInLineExceptMe, CorrespondingEnemyLine }
 
-    public enum VisualEffect { GreenCloud }
+    public enum SkillVisualEffect { GreenCloud }
 }

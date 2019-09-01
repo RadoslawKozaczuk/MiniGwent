@@ -11,17 +11,7 @@ namespace Assets.Scripts
     public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
         IBeginDragHandler, IDragHandler, IEndDragHandler
     {
-        public Image Image;
-        public int Id;
-
-        /// <summary>
-        /// Indicates whether that card should be able to drag.
-        /// </summary>
-        public bool Draggable;
-
-        [SerializeField] GameObject _front;
-        [SerializeField] GameObject _back;
-
+        #region Properties
         bool _hidden;
         /// <summary>
         /// When set to true card back is shown.
@@ -37,36 +27,42 @@ namespace Assets.Scripts
             }
         }
 
-        [SerializeField] TextMeshProUGUI _stengthText;
+        int _currentStrength;
+        public int CurrentStrength
+        {
+            get => _currentStrength;
+            set
+            {
+                _currentStrength = value;
+                UpdateStrengthText();
+            }
+        }
+        #endregion
 
-        public OutlineController OutlineController;
+        public Image Image;
+        public int Id;
+        public int DefaultStrength;
+
+        /// <summary>
+        /// Indicates whether that card should be able to be dragged.
+        /// </summary>
+        public bool Draggable;
+
+        [SerializeField] GameObject _front;
+        [SerializeField] GameObject _back;
+        [SerializeField] TextMeshProUGUI _titleText;
+        [SerializeField] TextMeshProUGUI _stengthText;
+        [SerializeField] OutlineController _outlineController;
 
         // predrag stuff
         Transform _preDragLocation;
         public LineUI ParentLineUI;
-
         public Canvas mainCanvas;
         public Canvas secondaryCanvas;
 
-        // this corresponds both to the sibling index on the line as well as the index in the table in GameLogic
+        // this corresponds both to the sibling index int the hierarchy as well as the index in the table in GameLogic
         public int SlotNumber;
-
-        public int MaxStrength;
-        public int CurrentStrength;
-
         public PlayerIndicator PlayerIndicator;
-
-        public CardUI UpdateStrengthText()
-        {
-            if (CurrentStrength < MaxStrength)
-                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
-            else if (CurrentStrength == MaxStrength)
-                _stengthText.text = $"STR: {CurrentStrength}";
-            else 
-                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
-
-            return this; // return this to allow method chaining
-        }
 
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
@@ -74,7 +70,7 @@ namespace Assets.Scripts
             // if nothing is being dragged
             if(!MainUIController.CardBeingDraged && !_hidden)
             {
-                OutlineController.TurnPulsationOn();
+                _outlineController.TurnPulsationOn();
                 MainUIController.Instance.CardInfoPanel.gameObject.SetActive(true);
                 MainUIController.Instance.CardInfoPanel.LoadDataForId(Id);
             }
@@ -82,7 +78,7 @@ namespace Assets.Scripts
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            OutlineController.TurnPulsationOff();
+            _outlineController.TurnPulsationOff();
             MainUIController.Instance.CardInfoPanel.gameObject.SetActive(false);
         }
 
@@ -140,5 +136,17 @@ namespace Assets.Scripts
             MainUIController.CardBeingDraged = null;
         }
         #endregion
+
+        CardUI UpdateStrengthText()
+        {
+            if (CurrentStrength < DefaultStrength)
+                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
+            else if (CurrentStrength == DefaultStrength)
+                _stengthText.text = $"STR: {CurrentStrength}";
+            else
+                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
+
+            return this; // return this to allow method chaining
+        }
     }
 }
