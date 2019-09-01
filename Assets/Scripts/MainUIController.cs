@@ -5,6 +5,7 @@ using Assets.Scripts.Interfaces;
 using Assets.Scripts.UI;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -93,29 +94,12 @@ namespace Assets.Scripts
 #endif
             #endregion
 
-            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, informGameLogic: false);
+            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
-            // upper logic does not keep any data related to skills so we have to check in the DB
-            CardData cardData = DB[movedCard.Id];
-            CardSkill skill = cardData.Skill;
-
-            // if there are any skills to do, do them
-            if (skill != null)
-            {
-                var targets = new List<CardUI>();
-                if (skill.ExecutionTime == SkillExecutionTime.OnDeploy)
-                {
-                    foreach(SkillTarget target in skill.Targets)
-                        targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
-
-                    VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
-
-                    await VFXController.PlayScheduledParticleEffects();
-                }
-            }
+            await DisplayVisualEffects(movedCard, targetLine, targetSlotNumber);
 
             // apply the effects - this will also apply card skill effects if any
-            _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+            _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
             // later on add some extra logic like check if all cards action are played or something like that
             EndTurnPanel.SetNothingElseToDo();
@@ -177,33 +161,65 @@ namespace Assets.Scripts
             return ui;
         }
 
-        void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
+        async void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
-            MoveData move = eventArgs.LastMove;
-
-            if (move != null)
+            // AI wants me to move a card
+            if(eventArgs.MessageType == GameLogicMessageType.MoveCard)
             {
-                MoveCardOnUI(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber, informGameLogic: false);
+#if UNITY_EDITOR
+                if (eventArgs.LastMove == null)
+                    throw new System.ArgumentNullException("LastMove", "LastMove cannot be null.");
+#endif
+
+                MoveCardOnUI(eventArgs.LastMove);
+                // TODO: add card move animation and return control after its over
+
+                // control return
+                _gameLogic.ControlReturn();
+            }
+
+            // AI wants me to play some VFXs
+            else if(eventArgs.MessageType == GameLogicMessageType.PlaySkillVFX)
+            {
+                CardSkill skill = eventArgs.Skill;
+                var (targetLine, targetSlot) = eventArgs.SkillTarget;
+
+                // play VFXs
+                await DisplayVisualEffects(skill, targetLine, targetSlot);
+
+                // control return
+                _gameLogic.ControlReturn();
+            }
+
+            // AI wants me to update strength
+            else if(eventArgs.MessageType == GameLogicMessageType.UpdateStrength)
+            {
+                // apply strength update to the UI
+                ApplyCurrentCardStrengthsChanges(eventArgs.CardStrengths);
+
+                // remove dead ones
+                RemoveDeadOnes();
+
+                // control return
+                _gameLogic.ControlReturn();
+            }
+
+            // AI informs me that its turn has ended
+            else if(eventArgs.MessageType == GameLogicMessageType.EndTurn)
+            {
                 EndTurnPanel.SetYourTurn();
                 BlockDragAction = false;
             }
 
-            if(eventArgs.MessageType == GameLogicMessageType.GameOver)
+            // AI informs me that the game is over
+            else if(eventArgs.MessageType == GameLogicMessageType.GameOver)
             {
                 BlackBackground.SetActive(true);
                 EndGamePanel.SetData(eventArgs.OverallTopStrength, eventArgs.OverallBotStrength);
             }
-
-            // apply logic changes
-            for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
-            {
-                List<CardUI> cards = _lines[i].Cards;
-                for (int j = 0; j < cards.Count; j++)
-                    cards[j].CurrentStrength = eventArgs.CurrentCardStrengths[i - 1][j]; // minus 1 because logic omit decks while sending
-            }
         }
 
-        CardUI MoveCardOnUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber, bool informGameLogic)
+        CardUI MoveCardOnUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
         {
             #region Assertions
 #if UNITY_EDITOR
@@ -220,10 +236,84 @@ namespace Assets.Scripts
             fLine.RemoveFromLine(fromSlotNumber);
             tLine.InsertCard(card, targetSlotNumber);
 
-            if(informGameLogic)
-                _gameLogic.MoveCard(fromLine, fromSlotNumber, targetLine, targetSlotNumber); // inform internal game logic
-
             return card;
+        }
+
+        void MoveCardOnUI(MoveData move)
+        {
+            #region Assertions
+#if UNITY_EDITOR
+            MoveCardAssertions(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
+#endif
+            #endregion
+
+            LineUI fLine = _lines[(int)move.FromLine];
+            LineUI tLine = _lines[(int)move.TargetLine];
+
+            CardUI card = fLine[move.FromSlotNumber];
+            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
+
+            fLine.RemoveFromLine(move.FromSlotNumber);
+            tLine.InsertCard(card, move.TargetSlotNumber);
+        }
+
+        async Task DisplayVisualEffects(CardUI movedCard, Line targetLine, int targetSlotNumber)
+        {
+            // upper logic does not keep any data related to skills so we have to check in the DB
+            CardSkill skill = DB[movedCard.Id].Skill;
+
+            // if there are any skills to do, do them
+            if (skill != null)
+            {
+                var targets = new List<CardUI>();
+                if (skill.ExecutionTime == SkillExecutionTime.OnDeploy)
+                {
+                    foreach (SkillTarget target in skill.Targets)
+                        targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
+
+                    VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
+
+                    await VFXController.PlayScheduledParticleEffects();
+
+                    // remove dead ones - does not work
+                    RemoveDeadOnes();
+                }
+            }
+        }
+
+        async Task DisplayVisualEffects(CardSkill skill, Line targetLine, int targetSlotNumber)
+        {
+            var targets = new List<CardUI>();
+            if (skill.ExecutionTime == SkillExecutionTime.OnDeploy)
+            {
+                foreach (SkillTarget target in skill.Targets)
+                    targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
+
+                VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
+
+                await VFXController.PlayScheduledParticleEffects();
+            }
+        }
+
+        void ApplyCurrentCardStrengthsChanges(List<List<int>> currentCardStrengths)
+        {
+            for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
+            {
+                List<CardUI> cards = _lines[i].Cards;
+                for (int j = 0; j < cards.Count; j++)
+                    cards[j].CurrentStrength = currentCardStrengths[i - 1][j]; // minus 1 because logic omits decks while sending
+            }
+        }
+
+        void RemoveDeadOnes()
+        {
+            for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
+            {
+                LineUI line = _lines[i];
+                for (int j = 0; j < line.Cards.Count; j++)
+                    if(line[j].CurrentStrength <= 0)
+                        line.RemoveFromLine(j--);
+            }
         }
 
         #region Assertions

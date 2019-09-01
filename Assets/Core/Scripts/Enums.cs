@@ -14,7 +14,7 @@
 
     public enum GameType { Human_vs_AI, AI_vs_AI }
 
-    public enum GameLogicMessageType { Normal, GameOver }
+    public enum GameLogicMessageType { MoveCard, PlaySkillVFX, UpdateStrength, EndTurn, GameOver }
 
     public enum SkillExecutionTime { OnDeploy, EndOfTurn }
 
