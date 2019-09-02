@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Assets.Core;
 using System.Linq;
+using System;
 
 namespace Assets.Editor.CoreAssemblyTests
 {
@@ -70,6 +71,35 @@ namespace Assets.Editor.CoreAssemblyTests
             Assert.IsTrue(list2[2].Value == true);
 
             Assert.IsTrue(list3.All(v => v.Value == false));
+        }
+
+        [Test]
+        public void GetAllExceptOne_Test()
+        {
+            // arrange
+            var list = new List<int>(4) { 1, 2, 3, 4, 5 };
+
+            // act
+            List<int> ommit1 = list.GetAllExceptOne(0).ToList();
+            List<int> ommit3 = list.GetAllExceptOne(2).ToList();
+            List<int> ommit5 = list.GetAllExceptOne(4).ToList();
+
+            // assert
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => list.GetAllExceptOne(-1));
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => list.GetAllExceptOne(5));
+
+            Assert.IsTrue(ommit1[0] == 2
+                && ommit1[1] == 3
+                && ommit1[2] == 4
+                && ommit1[3] == 5);
+            Assert.IsTrue(ommit3[0] == 1
+                && ommit3[1] == 2
+                && ommit3[2] == 4
+                && ommit3[3] == 5);
+            Assert.IsTrue(ommit5[0] == 1
+                && ommit5[1] == 2
+                && ommit5[2] == 3
+                && ommit5[3] == 4);
         }
     }
 }

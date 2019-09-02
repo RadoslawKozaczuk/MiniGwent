@@ -22,6 +22,12 @@ namespace Assets.Core
 
         public static IEnumerable<T> GetAllExceptOne<T>(this IEnumerable<T> source, int except)
         {
+#if UNITY_EDITOR
+            if (except < 0 || except >= source.Count())
+                throw new ArgumentOutOfRangeException(
+                    "except",
+                    $"Except argument cannot be lower than 0 or greater or equal than the collection's size {source.Count()}");
+#endif
             var list = new List<T>();
             for(int i = 0; i < source.Count(); i++)
                 if (i != except)
