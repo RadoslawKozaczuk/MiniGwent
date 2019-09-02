@@ -13,10 +13,11 @@ namespace Assets.Core
             => source.Skip(Math.Max(0, source.Count() - n));
 
         /// <summary>
-        /// Executes given action on all elements starting from the slotNumber-element (exclusive).
-        /// For example if slotNumber = 1, the method will execute on all elements except the first two.
+        /// Executes given action on all elements starting from the slotNumber-element (inclusive).
+        /// For example if slotNumber = 1, the method will execute on all elements except the first one.
         /// </summary>
         public static void AllOnTheRight<T>(this IEnumerable<T> source, int slotNumber, Action<T> action) 
+            where T : class
             => source.GetLast(source.Count() - slotNumber).ToList().ForEach(action);
 
         public static IEnumerable<T> GetAllExceptOne<T>(this IEnumerable<T> source, int except)
