@@ -1,15 +1,14 @@
-﻿using Assets.Core.DataModel;
+﻿using Assets.Core.CardSkills;
+using Assets.Core.DataModel;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
+using System.Text;
 using UnityEngine;
-using Assets.Core.CardSkills;
 
 namespace Assets.Core
-{ 
-    [DisallowMultipleComponent]
-    public class GameLogic : MonoBehaviour
+{
+    public class GameLogic
     {
         public const int MAX_NUMBER_OF_CARDS_IN_LINE = 10;
         const int NUMBER_OF_CARDS_IN_DECK = 6;
@@ -18,69 +17,97 @@ namespace Assets.Core
         /// Subscribe to this event to receive notifications each time resource number has changed.
         /// </summary>
         public static event EventHandler<GameLogicStatusChangedEventArgs> GameLogicStatusChangedEventHandler;
-
-        int TopTotalStrength => TopBackline.Sum(c => c.CurrentStrength) + TopFrontline.Sum(c => c.CurrentStrength);
-        int BotTotalStrength => BotBackline.Sum(c => c.CurrentStrength) + BotFrontline.Sum(c => c.CurrentStrength);
-
-        readonly List<CardModel> TopDeck = new List<CardModel>();
-        readonly List<CardModel> TopBackline = new List<CardModel>();
-        readonly List<CardModel> TopFrontline = new List<CardModel>();
-        readonly List<CardModel> BotFrontline = new List<CardModel>();
-        readonly List<CardModel> BotBackline = new List<CardModel>();
-        readonly List<CardModel> BotDeck = new List<CardModel>();
-
-        readonly List<CardModel>[] _lines;
-
-        public MoveData LastAIMove;
-
         internal static readonly DummyDB DB = new DummyDB();
 
-        bool _blockExternalCalls; // when AI is moving 
-        readonly AI _ai;
+        int TopTotalStrength => _topBackline.Sum(c => c.CurrentStrength) + _topFrontline.Sum(c => c.CurrentStrength);
+        int BotTotalStrength => _botBackline.Sum(c => c.CurrentStrength) + _botFrontline.Sum(c => c.CurrentStrength);
 
-        public GameLogic()
+        readonly List<CardModel> _topDeck = new List<CardModel>();
+        readonly List<CardModel> _topBackline = new List<CardModel>();
+        readonly List<CardModel> _topFrontline = new List<CardModel>();
+        readonly List<CardModel> _botFrontline = new List<CardModel>();
+        readonly List<CardModel> _botBackline = new List<CardModel>();
+        readonly List<CardModel> _botDeck = new List<CardModel>();
+        readonly List<CardModel>[] _lines;
+        readonly AI _aiTop;
+        readonly AI _aiBot; // null when controlled by human
+        readonly AI[] _aiReferences;
+
+        internal bool EndTurnMsgSent; // if true then indicates that next return control signal will start a new turn
+
+        // this is a bit inconsistent
+        // but 
+        public PlayerIndicator CurrentPlayer = PlayerIndicator.Bot; // bot always starts the game whether it is a human or AI
+
+        // top player is always AI
+        public GameLogic(PlayerControl botControlType)
         {
-            _lines = new List<CardModel>[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
-            _ai = new AI(PlayerIndicator.Top, TopDeck, TopBackline, TopFrontline, this, true);
+            _lines = new List<CardModel>[6] { _topDeck, _topBackline, _topFrontline, _botFrontline, _botBackline, _botDeck };
+            _aiTop = new AI(PlayerIndicator.Top, _topDeck, _topBackline, _topFrontline, gameLogic: this, fakeThinking: true);
+
+            if(botControlType == PlayerControl.AI)
+                _aiBot = new AI(PlayerIndicator.Bot, _botDeck, _botBackline, _botFrontline, gameLogic: this, fakeThinking: true);
+
+            _aiReferences = new AI[] { _aiTop, _aiBot };
         }
 
-        public void StartAITurn()
+        /// <summary>
+        /// Starts new turn.
+        /// </summary>
+        public void StartNextTurn()
         {
-            if(TopDeck.Count == 0)
+            CurrentPlayer = CurrentPlayer.Opposite();
+            StartNextTurnInternal();
+        }
+
+        void StartNextTurnInternal()
+        {
+            EndTurnMsgSent = false;
+
+            //Debug.Log("Start of a new turn, the current player is: " + CurrentPlayer.ToString());
+
+            if (CurrentPlayer == PlayerIndicator.Top)
             {
-                // AI has nothing else to do
-                BroadcastGameOver(); // for now player always plays first so we can safely broadcast game over here
+                if (_topDeck.Count == 0)
+                {
+                    // AI has nothing else to do
+                    BroadcastGameOver(); // for now player always plays first so we can safely broadcast game over here
+                }
+                else
+                    _aiTop.StartAITurn();
             }
             else
-                _ai.StartAITurn();
-        }
-
-        public void ControlReturn()
-        {
-            _ai.ControlReturn();
-            Debug.Log("ControlReturn");
-        }
-
-        /// <summary>
-        /// Removes given card from the line.
-        /// CardNumber indicates the card number from left to right. First card from the left is 0.
-        /// </summary>
-        public void RemoveCardFromLine(Line targetLine, int cardNumber)
-        {
-            _lines[(int)targetLine].RemoveAt(cardNumber);
+            {
+                if (_botDeck.Count == 0)
+                {
+                    // AI has nothing else to do
+                    BroadcastGameOver(); // for now player always plays first so we can safely broadcast game over here
+                }
+                else
+                    _aiBot.StartAITurn();
+            }
         }
 
         /// <summary>
-        /// This is for AI
+        ///  
         /// </summary>
-        internal void MoveCardAI(PlayerIndicator player, int fromSlotNumber, PlayerLine targetLine, int targetSlotNumber)
+        public void ReturnControl()
         {
-            // AI use abstraction so we need these values to be mapped
-            Line fLine = MapPlayerLine(player, PlayerLine.Deck);
-            Line tLine = MapPlayerLine(player, targetLine);
+            //Debug.Log($"return control - curretn player = {CurrentPlayer.ToString()}");
 
-            LastAIMove = new MoveData(fLine, fromSlotNumber, tLine, targetSlotNumber);
-            MoveCardForUI(fLine, fromSlotNumber, tLine, targetSlotNumber);
+            bool theOtherPlayerIsAI = _aiReferences[(int)CurrentPlayer] != null;
+
+            if (EndTurnMsgSent && theOtherPlayerIsAI)
+            {
+                StartNextTurnInternal();
+            }
+            else
+            {
+                if (CurrentPlayer == PlayerIndicator.Top)
+                    _aiTop.ReturnControl();
+                else if (CurrentPlayer == PlayerIndicator.Bot && _aiBot != null)
+                    _aiBot.ReturnControl();
+            }
         }
 
         internal Line MapPlayerLine(PlayerIndicator player, PlayerLine line)
@@ -100,8 +127,8 @@ namespace Assets.Core
                     case PlayerLine.Frontline: return Line.BotFrontline;
                 }
 
-            throw new Exception("Unrecognized parameter. "
-                + "Either Player or PlayerLine enumerator has been extended without extending the mapping function.");
+            throw new Exception("Unreachable code reached! "
+                + "PlayerIndicator or PlayerLine enumerator must have been extended without extending the MapPlayerLine function.");
         }
 
         public void MoveCardForUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
@@ -138,8 +165,6 @@ namespace Assets.Core
 
             // remove dead ones
             RemoveDeadOnes();
-
-            //_isDirty = true; // not needed here
 
             // inform upper logic about new strengths
             BroadcastUpdateStrength(cardStrengths);
@@ -232,7 +257,7 @@ namespace Assets.Core
                 return cards.GetRightNeighbor(targetSlotNumber).ToList();
 
             throw new Exception("Unreachable code reached! "
-                + "CardSkillTarget enumerator must have been extended without extending the ParseCardSkillTarget method logic.");
+                + "CardSkillTarget enumerator must have been extended without extending the ParseCardSkillTarget function.");
         }
 
         /// <summary>
@@ -283,12 +308,15 @@ namespace Assets.Core
         internal void BroadcastMoveCard(MoveData move) 
             => GameLogicStatusChangedEventHandler?.Invoke(
                 this, 
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.MoveCard) { LastMove = move });
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.MoveCard, CurrentPlayer)
+                {
+                    LastMove = move
+                });
 
         internal void BroadcastPlaySkillVFX((Line targetLine, int targetSlot) skillTarget, CardSkill skill)
             => GameLogicStatusChangedEventHandler?.Invoke(
                 this, 
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.PlaySkillVFX)
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.PlaySkillVFX, CurrentPlayer)
                 {
                     SkillTarget = skillTarget,
                     Skill = skill
@@ -298,27 +326,37 @@ namespace Assets.Core
         internal void BroadcastUpdateStrength(List<List<int>> cardStrengths)
             => GameLogicStatusChangedEventHandler?.Invoke(
                 this,
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength) { CardStrengths = cardStrengths });
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
+                {
+                    CardStrengths = cardStrengths
+                });
 
         // late evaluation
         internal void BroadcastUpdateStrength()
             => GameLogicStatusChangedEventHandler?.Invoke(
                 this,
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength) { CardStrengths = GetCardStrengths() });
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
+                {
+                    CardStrengths = GetCardStrengths()
+                });
 
         internal void BroadcastEndTurn()
-            => GameLogicStatusChangedEventHandler?.Invoke(
-                this, 
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn)
+        {
+            CurrentPlayer = CurrentPlayer.Opposite();
+
+            GameLogicStatusChangedEventHandler?.Invoke(
+                this,
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn, CurrentPlayer)
                 {
                     TopTotalStrength = TopTotalStrength,
                     BotTotalStrength = BotTotalStrength
                 });
+        }
 
         internal void BroadcastGameOver()
             => GameLogicStatusChangedEventHandler?.Invoke(
                 this, 
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.GameOver)
+                new GameLogicStatusChangedEventArgs(GameLogicMessageType.GameOver, CurrentPlayer)
                 {
                      TopTotalStrength = TopTotalStrength,
                      BotTotalStrength = BotTotalStrength

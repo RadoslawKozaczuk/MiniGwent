@@ -12,7 +12,7 @@ namespace Assets.Core
         const int MIN_THINKING_TIME = 1000;
         const int MAX_THINKING_TIME = 2000;
 
-        string MyIndicator => _myIndicator == PlayerIndicator.Top ? "Top" : "Bot";
+        string MyIndicatorToStr => _myIndicator == PlayerIndicator.Top ? "Top" : "Bot";
 
         readonly PlayerIndicator _myIndicator;
         readonly List<CardModel> _myDeck;
@@ -21,7 +21,7 @@ namespace Assets.Core
         readonly GameLogic _gameLogic;
         readonly bool _fakeThinking;
 
-        // each turn AI creates a list of tasks and then executes them one by one
+        // each turn AI creates a list of tasks and then executes them one by one each time waiting for the upper logic response
         readonly Queue<Action> _taskQueue = new Queue<Action>();
 
         internal AI(PlayerIndicator player, List<CardModel> deck, List<CardModel> backline, 
@@ -67,7 +67,7 @@ namespace Assets.Core
             _gameLogic.BroadcastMoveCard(move);
         }
 
-        public void ControlReturn()
+        public void ReturnControl()
         {
             if(_taskQueue.Count > 0)
                 _taskQueue.Dequeue().Invoke();
@@ -90,7 +90,15 @@ namespace Assets.Core
              
             // 3. brilliant! Finally choose a random slot and play that card there
             int maxSlotNumber = line == PlayerLine.Backline ? _myBackline.Count : _myFrontline.Count;
-            int targetSlotNumber = UnityEngine.Random.Range(0, maxSlotNumber + 1);
+            Debug.Log("AI Move Calculation: MaxSlotNumber " + maxSlotNumber);
+
+            int targetSlotNumber = maxSlotNumber == 0 
+                ? 0 
+                : UnityEngine.Random.Range(0, maxSlotNumber + 1);
+
+            Debug.Log($"AI {MyIndicatorToStr} came up with a move idea: fSlot:{fromSlotNumber}" 
+                + $" tLine:{line.ToString()}" 
+                + $" tSlot:{targetSlotNumber}");
 
             if (_fakeThinking) // pretend it took you some time to come up with such an amazing idea
                 await Task.Delay(UnityEngine.Random.Range(MIN_THINKING_TIME, MAX_THINKING_TIME)); 
@@ -100,30 +108,27 @@ namespace Assets.Core
 
         internal void PlaySkillVFX(CardSkill skill, Line line, int slotNumber)
         {
-            Debug.Log($"AI {MyIndicator} invoked PlaySkillVFX action");
-
+            //Debug.Log($"AI {MyIndicator} invoked PlaySkillVFX action");
             _gameLogic.BroadcastPlaySkillVFX((line, slotNumber), skill);
         }
 
         internal void ApplySkill(CardSkill skill, Line line, int slotNumber)
         {
-            Debug.Log($"AI {MyIndicator} invoked ApplySkill action");
-
+            //Debug.Log($"AI {MyIndicator} invoked ApplySkill action");
             _gameLogic.ApplySkillEffectForAI(skill, line, slotNumber);
             _gameLogic.BroadcastUpdateStrength();
         }
 
         internal void UpdateStrength()
         {
-            Debug.Log($"AI {MyIndicator} invoked UpdateStrength action");
-
+            //Debug.Log($"AI {MyIndicator} invoked UpdateStrength action");
             _gameLogic.BroadcastUpdateStrength();
         }
 
         internal void EndTurn()
         {
-            Debug.Log($"AI {MyIndicator} invoked EndTurn action");
-
+            Debug.Log($"AI {MyIndicatorToStr} invoked EndTurn action");
+            _gameLogic.EndTurnMsgSent = true; // indicates that AI is done
             _gameLogic.BroadcastEndTurn();
         }
     }

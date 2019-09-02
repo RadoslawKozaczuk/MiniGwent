@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using Assets.Core;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,8 +8,20 @@ namespace Assets.Scripts.UI
     [DisallowMultipleComponent]
     public class EndTurnPanelUI : MonoBehaviour
     {
+        #region Properties
         public bool Interactable => _endTurnButton.interactable;
+        public PlayerIndicator CurrentTurn
+        {
+            set
+            {
+                _currentTurnText.text = value == PlayerIndicator.Top 
+                    ? "Current turn: TOP" 
+                    : "Current turn: BOT";
+            }
+        }
+        #endregion
 
+        [SerializeField] TextMeshProUGUI _currentTurnText;
         [SerializeField] Button _endTurnButton;
         [SerializeField] TextMeshProUGUI _infoText;
 

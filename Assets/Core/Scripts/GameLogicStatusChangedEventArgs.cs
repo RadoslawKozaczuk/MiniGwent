@@ -10,6 +10,7 @@ namespace Assets.Core
     public sealed class GameLogicStatusChangedEventArgs
     {
         public GameLogicMessageType MessageType;
+        public PlayerIndicator CurrentPlayer;
         public MoveData LastMove;
         public string CurrentStatus;
         public int TopTotalStrength;
@@ -19,9 +20,10 @@ namespace Assets.Core
         public (Line targetLine, int targetSlot) SkillTarget;
         public CardSkill Skill;
 
-        public GameLogicStatusChangedEventArgs(GameLogicMessageType type)
+        public GameLogicStatusChangedEventArgs(GameLogicMessageType type, PlayerIndicator currentPlayer)
         {
             MessageType = type;
+            CurrentPlayer = currentPlayer;
         }
 
         //public GameLogicStatusChangedEventArgs(GameLogicMessageType type, string internalStatus, 

@@ -15,13 +15,24 @@ namespace Assets.Scripts
         public static MainUIController Instance;
         public static readonly DummyDB DB = new DummyDB();
 
+        PlayerIndicator _currentPlayer;
+        public PlayerIndicator CurrentPlayer
+        {
+            get =>_currentPlayer;
+            set
+            {
+                _currentPlayer = value;
+                _endTurnPanel.CurrentTurn = value;
+            }
+        }
+
         // lines
-        public LineUI TopDeck;
-        public LineUI TopBackline;
-        public LineUI TopFrontline;
-        public LineUI BotFrontline;
-        public LineUI BotBackline;
-        public LineUI BotDeck;
+        [SerializeField] LineUI _topDeck;
+        [SerializeField] LineUI _topBackline;
+        [SerializeField] LineUI _topFrontline;
+        [SerializeField] LineUI _botFrontline;
+        [SerializeField] LineUI _botBackline;
+        [SerializeField] LineUI _botDeck;
 
         // prefabs
         public GameObject CardContainerPrefab;
@@ -32,12 +43,15 @@ namespace Assets.Scripts
         public CardInfoUI CardInfoPanel;
         public EndGamePanelUI EndGamePanel;
         public GameObject BlackBackground;
-        [SerializeField] GameLogic _gameLogic;
+        GameLogic _gameLogic;
 
         [SerializeField] StatusPanelUI _statusPanel;
         [SerializeField] GameObject _linesGroup;
         [SerializeField] EndTurnPanelUI _endTurnPanel;
 
+        // top control
+        readonly PlayerControl _topPlayerControl = PlayerControl.AI; // always AI
+        PlayerControl _botPlayerControl;
 
         public RectTransform ObjectDump;
         public VFXController VFXController;
@@ -61,26 +75,32 @@ namespace Assets.Scripts
             Icons = Resources.LoadAll("Icons", typeof(Sprite)).Cast<Sprite>().ToArray(); ;
 
             // for convenience
-            _lines = new LineUI[6] { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck };
+            _lines = new LineUI[6] { _topDeck, _topBackline, _topFrontline, _botFrontline, _botBackline, _botDeck };
 
             // subscribe
             GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
         }
 
-        public void StartGame()
+        public void StartGame(PlayerControl botControl)
         {
+            _gameLogic = new GameLogic(botControl);
+
+            _botPlayerControl = botControl;
+
             _statusPanel.gameObject.SetActive(true);
             _linesGroup.gameObject.SetActive(true);
             _endTurnPanel.gameObject.SetActive(true);
+            _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
+            BlackBackground.SetActive(false);
 
-            SpawnDeck(PlayerIndicator.Top, true);
-            SpawnDeck(PlayerIndicator.Bot, false);
-            _endTurnPanel.SetYourTurn();
-        }
+            // if both players are AI both decs are visible
+            SpawnDeck(PlayerIndicator.Top, hidden: _botPlayerControl == PlayerControl.Human);
+            SpawnDeck(PlayerIndicator.Bot, hidden: false);
 
-        void Start()
-        {
-            
+            if (_botPlayerControl == PlayerControl.AI)
+                _gameLogic.StartNextTurn();
+            else
+                _endTurnPanel.SetYourTurn();
         }
 
         void Update()
@@ -93,8 +113,10 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void HandleEndTurnAction()
         {
+            CurrentPlayer = CurrentPlayer.Opposite();
+
             _endTurnPanel.SetAiThinking();
-            _gameLogic.StartAITurn();
+            _gameLogic.StartNextTurn();
 
             BlockDragAction = true;
         }
@@ -179,19 +201,28 @@ namespace Assets.Scripts
 
         async void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
+            CurrentPlayer = eventArgs.CurrentPlayer;
+
             // AI wants me to move a card
-            if(eventArgs.MessageType == GameLogicMessageType.MoveCard)
+            if (eventArgs.MessageType == GameLogicMessageType.MoveCard)
             {
 #if UNITY_EDITOR
                 if (eventArgs.LastMove == null)
                     throw new System.ArgumentNullException("LastMove", "LastMove cannot be null.");
 #endif
 
+                Debug.Log($"MoveData: fLine:{eventArgs.LastMove.FromLine.ToString()}" 
+                    + $" fSlot:{eventArgs.LastMove.FromSlotNumber}" 
+                    + $" tLine:{eventArgs.LastMove.TargetLine.ToString()}" 
+                    + $" tSlot:{eventArgs.LastMove.TargetSlotNumber}");
+
                 MoveCardOnUI(eventArgs.LastMove);
                 // TODO: add card move animation and return control after its over
 
                 // control return
-                _gameLogic.ControlReturn();
+
+                Debug.Log("Return control after MoveCard msg handling");
+                _gameLogic.ReturnControl();
             }
 
             // AI wants me to play some VFXs
@@ -204,7 +235,8 @@ namespace Assets.Scripts
                 await DisplayVisualEffects(skill, targetLine, targetSlot);
 
                 // control return
-                _gameLogic.ControlReturn();
+                //Debug.Log("Return control after PlaySkillVFX msg handling");
+                _gameLogic.ReturnControl();
             }
 
             // AI wants me to update strength
@@ -217,20 +249,39 @@ namespace Assets.Scripts
                 RemoveDeadOnes();
 
                 // control return
-                _gameLogic.ControlReturn();
+                Debug.Log("Return control after UpdateStrength msg handling");
+                _gameLogic.ReturnControl();
             }
 
             // AI informs me that its turn has ended
             else if(eventArgs.MessageType == GameLogicMessageType.EndTurn)
             {
-                if(BotDeck.Count == 0) // nothing else to play
+                if (_botPlayerControl == PlayerControl.Human)
                 {
-                    GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
+                    if (_botDeck.Count == 0) // nothing else to play
+                    {
+                        GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
+                    }
+                    else
+                    {
+                        _endTurnPanel.SetYourTurn();
+                        BlockDragAction = false;
+                    }
                 }
                 else
                 {
-                    _endTurnPanel.SetYourTurn();
-                    BlockDragAction = false;
+                    if (_botDeck.Count == 0) // nothing else to play
+                    {
+                        GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
+                    }
+                    else
+                    {
+                        _endTurnPanel.SetYourTurn();
+                        BlockDragAction = false;
+                        // control return
+                        Debug.Log("Return control after EndTurn msg handling");
+                        _gameLogic.ReturnControl();
+                    }
                 }
             }
 
@@ -351,12 +402,14 @@ namespace Assets.Scripts
             if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)
                 throw new System.ArgumentOutOfRangeException(
                     "fromSlotNumber",
-                    "FromSlotNumber cannot be lower than 0 or greater than the number of cards in the line.");
+                    $"FromSlotNumber = {fromSlotNumber} while it cannot be lower than 0 "
+                    + $"or greater than the number of cards in the line ({_lines[(int)fromLine].Count}).");
 
             if (targetSlotNumber < 0 || targetSlotNumber > _lines[(int)targetLine].Count)
                 throw new System.ArgumentOutOfRangeException(
                     "targetSlotNumber",
-                    "TargetSlotNumber cannot be lower than 0 or greater than the number of cards in the line.");
+                    $"TargetSlotNumber = {targetSlotNumber} while it cannot be lower than 0 "
+                    + $"or greater than the number of cards in the line ({_lines[(int)targetLine].Count}).");
 
             if (targetLine == Line.TopDeck || targetLine == Line.BotDeck)
                 throw new System.ArgumentException("Moving card to a deck is not allowed.");

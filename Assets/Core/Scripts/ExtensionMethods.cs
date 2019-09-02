@@ -67,5 +67,10 @@ namespace Assets.Core
                 list.Add(source.ElementAt(slotNumber - 1));
             return list;
         }
+
+        public static PlayerIndicator Opposite(this PlayerIndicator indicator) 
+            => indicator == PlayerIndicator.Top
+                ? PlayerIndicator.Bot
+                : PlayerIndicator.Top;
     }
 }

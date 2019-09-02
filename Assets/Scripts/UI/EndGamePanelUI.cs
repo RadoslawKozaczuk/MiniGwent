@@ -11,7 +11,7 @@ namespace Assets.Scripts.UI
         [SerializeField] TextMeshProUGUI _score;
 
         /// <summary>
-        /// Make the panel visible on screen as well as fills it with appropriate data based on the parameters given.
+        /// Makes the panel visible on screen as well as fills it with appropriate data based on the parameters given.
         /// </summary>
         public void SetData(int topStrength, int botStrength)
         {
