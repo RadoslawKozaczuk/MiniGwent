@@ -982,6 +982,8 @@ MonoBehaviour:
   _vfxDuration: 2500
   _effects:
   - {fileID: 3452647660211847535, guid: 1a2d10b09bc8aae49a8ac8dfc78f36bc, type: 3}
+  - {fileID: 6985306053193517366, guid: f97ede5078fe19d40aa511ddb1ab3f06, type: 3}
+  - {fileID: 6437719126063698920, guid: 687d2e0bdffa79143883b75597d64cd3, type: 3}
 --- !u!4 &1987513833
 Transform:
   m_ObjectHideFlags: 0

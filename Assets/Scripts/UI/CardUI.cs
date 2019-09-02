@@ -34,7 +34,12 @@ namespace Assets.Scripts
             set
             {
                 _currentStrength = value;
-                UpdateStrengthText();
+                if (CurrentStrength < DefaultStrength)
+                    _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
+                else if (CurrentStrength == DefaultStrength)
+                    _stengthText.text = $"STR: {CurrentStrength}";
+                else
+                    _stengthText.text = $"STR: <color=green>{CurrentStrength}</color>";
             }
         }
         #endregion
@@ -47,15 +52,6 @@ namespace Assets.Scripts
         /// Indicates whether that card should be able to be dragged.
         /// </summary>
         public bool Draggable;
-
-        [SerializeField] GameObject _front;
-        [SerializeField] GameObject _back;
-        public TextMeshProUGUI TitleText;
-        [SerializeField] TextMeshProUGUI _stengthText;
-        [SerializeField] OutlineController _outlineController;
-
-        // predrag stuff
-        Transform _preDragLocation;
         public LineUI ParentLineUI;
         public Canvas mainCanvas;
         public Canvas secondaryCanvas;
@@ -63,6 +59,13 @@ namespace Assets.Scripts
         // this corresponds both to the sibling index int the hierarchy as well as the index in the table in GameLogic
         public int SlotNumber;
         public PlayerIndicator PlayerIndicator;
+        public TextMeshProUGUI TitleText;
+
+        [SerializeField] GameObject _front;
+        [SerializeField] GameObject _back;
+        [SerializeField] TextMeshProUGUI _stengthText;
+        [SerializeField] OutlineController _outlineController;
+        Transform _preDragLocation;
 
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
@@ -133,15 +136,5 @@ namespace Assets.Scripts
             MainUIController.CardBeingDraged = null;
         }
         #endregion
-
-        void UpdateStrengthText()
-        {
-            if (CurrentStrength < DefaultStrength)
-                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
-            else if (CurrentStrength == DefaultStrength)
-                _stengthText.text = $"STR: {CurrentStrength}";
-            else
-                _stengthText.text = $"STR: <color=red>{CurrentStrength}</color>";
-        }
     }
 }

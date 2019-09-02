@@ -1,5 +1,5 @@
 ﻿using Assets.Core;
-using Assets.Scripts.VFXControllers;
+using Assets.VFX;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -56,10 +56,8 @@ namespace Assets.Scripts
             _instanciatedEffects.Add(instance);
 
             // for now there is only cloud to chose from
-            GreenCloud cloud = instance.GetComponent<GreenCloud>();
-            cloud.Smoke.Play();
-            cloud.Flash.Play();
-            cloud.Flash2.Play();
+            ParticleEffect vfx = instance.GetComponent<ParticleEffect>();
+            vfx.PlayAllEffects();
         }
     }
 }

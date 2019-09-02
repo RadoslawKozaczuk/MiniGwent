@@ -23,5 +23,5 @@
         SingleEnemy, EnemyLine
     }
 
-    public enum SkillVisualEffect { GreenCloud }
+    public enum SkillVisualEffect { GreenCloud, Heal, FireBall }
 }

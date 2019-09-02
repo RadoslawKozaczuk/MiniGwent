@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Assets.Scripts
+namespace Assets.VFX
 {
-    class ParticleEffect : MonoBehaviour
+    internal abstract class ParticleEffect : MonoBehaviour
     {
-
+        internal abstract void PlayAllEffects();
     }
 }

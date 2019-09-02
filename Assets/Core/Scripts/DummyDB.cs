@@ -18,14 +18,13 @@ namespace Assets.Core
                 description: "Is so stupid that it bites its own allies for now reason. "
                     + "When deployed bites an ally unit on the right inflicting 1 DMG.",
                 strength: 5
+                ,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployAutomatic,
+                    targets: new List<SkillTarget> { SkillTarget.RightNeighbor },
+                    effect: card => card.CurrentStrength--,
+                    visualEffect: SkillVisualEffect.FireBall)
                 ),
-                //,
-                //skill: new CardSkill(
-                //    executionTime: SkillExecutionTime.OnDeployAutomatic,
-                //    targets: new List<SkillTarget> { SkillTarget.RightNeighbor },
-                //    effect: card => card.CurrentStrength--,
-                //    visualEffect: SkillVisualEffect.GreenCloud)
-                //),
             new CardData(
                 title: "Smelly Fish",
                 description: "Stinks like a dumpster. "
@@ -44,12 +43,24 @@ namespace Assets.Core
             new CardData(
                 title: "Elven Archer",
                 description: "On deploy he shot one enemy of choice for 3 DMG.",
-                strength: 5)//,
+                strength: 5),
                 //skill: new CardSkill(
                 //    executionTime: SkillExecutionTime.OnDeployManual,
                 //    targets: new List<SkillTarget> { SkillTarget.SingleEnemy },
                 //    effect: card => card.CurrentStrength -= 3,
                 //    visualEffect: SkillVisualEffect.GreenCloud))
+            new CardData(
+                title: "Tree of Eternity",
+                description: "Heals allies on left and right. "
+                    + "When deployed increases strength of nearby allies by 1.",
+                strength: 5
+                ,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployAutomatic,
+                    targets: new List<SkillTarget> { SkillTarget.BothNeighbors },
+                    effect: card => card.CurrentStrength++,
+                    visualEffect: SkillVisualEffect.Heal)
+                ),
         };
     }
 }
