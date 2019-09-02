@@ -1,6 +1,6 @@
 ﻿namespace Assets.Core
 {
-    public enum Line { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck }
+    public enum LineIndicator { TopDeck, TopBackline, TopFrontline, BotFrontline, BotBackline, BotDeck }
 
     /// <summary>
     /// From player's perspective there are only three lines. 
@@ -14,11 +14,14 @@
 
     public enum GameLogicMessageType { MoveCard, PlaySkillVFX, UpdateStrength, EndTurn, GameOver }
 
-    public enum SkillExecutionTime { OnDeploy, EndOfTurn }
+    public enum SkillExecutionTime { OnDeployAutomatic, OnDeployManual, UponDeath }
 
-    public enum SkillExecutionControlType { Automatic, Manual } // not used atm
-    
-    public enum SkillTarget { RightNeighbor, LeftNeighbor, BothNeighbors, AllInLineExceptMe, CorrespondingEnemyLine }
+    public enum SkillTarget {
+        // use together with OnDeployAutomatic and UponDeath
+        RightNeighbor, LeftNeighbor, BothNeighbors, AllInLineExceptMe, CorrespondingEnemyLine,
+        // use together with OnDeployManual
+        SingleEnemy, EnemyLine
+    }
 
     public enum SkillVisualEffect { GreenCloud }
 }

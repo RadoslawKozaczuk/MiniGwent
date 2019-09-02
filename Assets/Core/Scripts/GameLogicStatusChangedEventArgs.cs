@@ -17,8 +17,9 @@ namespace Assets.Core
         public int BotTotalStrength;
         public List<List<int>> CardStrengths;
 
-        public (Line targetLine, int targetSlot) SkillTarget;
+        public List<SkillTargetData> Targets;
         public CardSkill Skill;
+        public SkillVisualEffect VisualEffect;
 
         public GameLogicStatusChangedEventArgs(GameLogicMessageType type, PlayerIndicator currentPlayer)
         {

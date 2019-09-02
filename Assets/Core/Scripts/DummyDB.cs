@@ -14,17 +14,25 @@ namespace Assets.Core
         {
             // I added param names for readability (thx to that it looks more like JSON)
             new CardData(
-                title: "Dog",
-                description: "Likes to chase mailmen. "
-                    + "Once a turn he attacks first enemy unit that goes from frontline to backline inflicting 1 DMG.",
-                strength: 2),
+                title: "Stupid Dog",
+                description: "Is so stupid that it bites its own allies for now reason. "
+                    + "When deployed bites an ally unit on the right inflicting 1 DMG.",
+                strength: 5
+                ),
+                //,
+                //skill: new CardSkill(
+                //    executionTime: SkillExecutionTime.OnDeployAutomatic,
+                //    targets: new List<SkillTarget> { SkillTarget.RightNeighbor },
+                //    effect: card => card.CurrentStrength--,
+                //    visualEffect: SkillVisualEffect.GreenCloud)
+                //),
             new CardData(
                 title: "Smelly Fish",
                 description: "Stinks like a dumpster. "
                     + "When deployed inflicts 1 DMG to all units at your line (except the fish itself) and the corresponding enemy line.",
-                strength: 1,
+                strength: 5,
                 skill: new CardSkill(
-                    executionTime: SkillExecutionTime.OnDeploy, 
+                    executionTime: SkillExecutionTime.OnDeployAutomatic, 
                     targets: new List<SkillTarget> { SkillTarget.AllInLineExceptMe, SkillTarget.CorrespondingEnemyLine }, 
                     effect: card => card.CurrentStrength--,
                     visualEffect: SkillVisualEffect.GreenCloud)
@@ -32,7 +40,16 @@ namespace Assets.Core
             new CardData(
                 title: "Green Dude", 
                 description: "He can't do anything special but he is a decent warrior.", 
-                strength: 3)
+                strength: 5),
+            new CardData(
+                title: "Elven Archer",
+                description: "On deploy he shot one enemy of choice for 3 DMG.",
+                strength: 5)//,
+                //skill: new CardSkill(
+                //    executionTime: SkillExecutionTime.OnDeployManual,
+                //    targets: new List<SkillTarget> { SkillTarget.SingleEnemy },
+                //    effect: card => card.CurrentStrength -= 3,
+                //    visualEffect: SkillVisualEffect.GreenCloud))
         };
     }
 }

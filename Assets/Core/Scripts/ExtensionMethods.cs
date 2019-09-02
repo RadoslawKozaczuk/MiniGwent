@@ -73,5 +73,7 @@ namespace Assets.Core
             => indicator == PlayerIndicator.Top
                 ? PlayerIndicator.Bot
                 : PlayerIndicator.Top;
+
+        public static LineIndicator Opposite(this LineIndicator line) => (LineIndicator)(5 - (int)line);
     }
 }

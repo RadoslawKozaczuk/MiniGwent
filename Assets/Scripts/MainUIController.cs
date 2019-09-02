@@ -121,7 +121,7 @@ namespace Assets.Scripts
             BlockDragAction = true;
         }
 
-        public async void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        public async void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             #region Assertions
 #if UNITY_EDITOR
@@ -131,7 +131,7 @@ namespace Assets.Scripts
 
             CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
-            await DisplayVisualEffects(movedCard, targetLine, targetSlotNumber);
+            await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
 
             // apply the effects - this will also apply card skill effects if any
             _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
@@ -143,7 +143,7 @@ namespace Assets.Scripts
         }
         #endregion
 
-        List<CardUI> ParseCardSkillTarget(Line targetLine, int targetSlotNumber, SkillTarget target)
+        List<CardUI> ParseCardSkillTarget(LineIndicator targetLine, int targetSlotNumber, SkillTarget target)
         {
             if (target == SkillTarget.CorrespondingEnemyLine)
             {
@@ -229,10 +229,9 @@ namespace Assets.Scripts
             else if(eventArgs.MessageType == GameLogicMessageType.PlaySkillVFX)
             {
                 CardSkill skill = eventArgs.Skill;
-                var (targetLine, targetSlot) = eventArgs.SkillTarget;
 
                 // play VFXs
-                await DisplayVisualEffects(skill, targetLine, targetSlot);
+                await DisplayVisualEffects(eventArgs.Targets, eventArgs.VisualEffect);
 
                 // control return
                 //Debug.Log("Return control after PlaySkillVFX msg handling");
@@ -298,7 +297,7 @@ namespace Assets.Scripts
             EndGamePanel.SetData(topStrength, botStrength);
         }
 
-        CardUI MoveCardOnUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        CardUI MoveCardOnUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             #region Assertions
 #if UNITY_EDITOR
@@ -336,7 +335,7 @@ namespace Assets.Scripts
             tLine.InsertCard(card, move.TargetSlotNumber);
         }
 
-        async Task DisplayVisualEffects(CardUI movedCard, Line targetLine, int targetSlotNumber)
+        async Task DisplayVisualEffectsIfAny(CardUI movedCard, LineIndicator targetLine, int targetSlotNumber)
         {
             // upper logic does not keep any data related to skills so we have to check in the DB
             CardSkill skill = DB[movedCard.Id].Skill;
@@ -345,7 +344,7 @@ namespace Assets.Scripts
             if (skill != null)
             {
                 var targets = new List<CardUI>();
-                if (skill.ExecutionTime == SkillExecutionTime.OnDeploy)
+                if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
                 {
                     foreach (SkillTarget target in skill.Targets)
                         targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
@@ -353,25 +352,20 @@ namespace Assets.Scripts
                     VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
 
                     await VFXController.PlayScheduledParticleEffects();
-
-                    // remove dead ones - does not work
-                    RemoveDeadOnes();
                 }
             }
         }
 
-        async Task DisplayVisualEffects(CardSkill skill, Line targetLine, int targetSlotNumber)
+        async Task DisplayVisualEffects(List<SkillTargetData> targets, SkillVisualEffect visualEffect)
         {
-            var targets = new List<CardUI>();
-            if (skill.ExecutionTime == SkillExecutionTime.OnDeploy)
-            {
-                foreach (SkillTarget target in skill.Targets)
-                    targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
+            var targetCards = new List<CardUI>(targets.Count);
 
-                VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
+            foreach (SkillTargetData target in targets)
+                targetCards.Add(_lines[(int)target.Line][target.SlotNumber]);
 
-                await VFXController.PlayScheduledParticleEffects();
-            }
+            VFXController.ScheduleParticleEffect(targetCards, visualEffect);
+
+            await VFXController.PlayScheduledParticleEffects();
         }
 
         void ApplyCurrentCardStrengthsChanges(List<List<int>> currentCardStrengths)
@@ -397,7 +391,7 @@ namespace Assets.Scripts
 
         #region Assertions
 #if UNITY_EDITOR
-        void MoveCardAssertions(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        void MoveCardAssertions(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)
                 throw new System.ArgumentOutOfRangeException(
@@ -411,20 +405,20 @@ namespace Assets.Scripts
                     $"TargetSlotNumber = {targetSlotNumber} while it cannot be lower than 0 "
                     + $"or greater than the number of cards in the line ({_lines[(int)targetLine].Count}).");
 
-            if (targetLine == Line.TopDeck || targetLine == Line.BotDeck)
+            if (targetLine == LineIndicator.TopDeck || targetLine == LineIndicator.BotDeck)
                 throw new System.ArgumentException("Moving card to a deck is not allowed.");
 
             if (fromLine == targetLine)
                 throw new System.ArgumentException("Moving card to the same line is not allowed.");
 
-            if ((fromLine == Line.BotDeck || fromLine == Line.BotBackline || fromLine == Line.BotFrontline)
+            if ((fromLine == LineIndicator.BotDeck || fromLine == LineIndicator.BotBackline || fromLine == LineIndicator.BotFrontline)
                 &&
-                (targetLine == Line.TopDeck || targetLine == Line.TopBackline || targetLine == Line.TopFrontline))
+                (targetLine == LineIndicator.TopDeck || targetLine == LineIndicator.TopBackline || targetLine == LineIndicator.TopFrontline))
                 throw new System.ArgumentException("Moving card from any bot line to any top line is not allowed.");
 
-            if ((fromLine == Line.TopDeck || fromLine == Line.TopBackline || fromLine == Line.TopFrontline)
+            if ((fromLine == LineIndicator.TopDeck || fromLine == LineIndicator.TopBackline || fromLine == LineIndicator.TopFrontline)
                 &&
-                (targetLine == Line.BotDeck || targetLine == Line.BotBackline || targetLine == Line.BotFrontline))
+                (targetLine == LineIndicator.BotDeck || targetLine == LineIndicator.BotBackline || targetLine == LineIndicator.BotFrontline))
                 throw new System.ArgumentException("Moving card from any top line to any bot line is not allowed.");
         }
 #endif

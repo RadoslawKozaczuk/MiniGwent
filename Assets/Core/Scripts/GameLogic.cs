@@ -22,6 +22,9 @@ namespace Assets.Core
         int TopTotalStrength => _topBackline.Sum(c => c.CurrentStrength) + _topFrontline.Sum(c => c.CurrentStrength);
         int BotTotalStrength => _botBackline.Sum(c => c.CurrentStrength) + _botFrontline.Sum(c => c.CurrentStrength);
 
+        internal PlayerIndicator CurrentPlayer = PlayerIndicator.Bot; // bot always starts the game whether it is a human or AI
+        internal bool EndTurnMsgSent; // when true it indicates that next return control signal will start a new turn
+
         readonly List<CardModel> _topDeck = new List<CardModel>();
         readonly List<CardModel> _topBackline = new List<CardModel>();
         readonly List<CardModel> _topFrontline = new List<CardModel>();
@@ -32,12 +35,6 @@ namespace Assets.Core
         readonly AI _aiTop;
         readonly AI _aiBot; // null when controlled by human
         readonly AI[] _aiReferences;
-
-        internal bool EndTurnMsgSent; // if true then indicates that next return control signal will start a new turn
-
-        // this is a bit inconsistent
-        // but 
-        public PlayerIndicator CurrentPlayer = PlayerIndicator.Bot; // bot always starts the game whether it is a human or AI
 
         // top player is always AI
         public GameLogic(PlayerControl botControlType)
@@ -59,6 +56,18 @@ namespace Assets.Core
             CurrentPlayer = CurrentPlayer.Opposite();
             StartNextTurnInternal();
         }
+
+        internal List<CardModel> GetLine(PlayerIndicator player, PlayerLine line) 
+            => player == PlayerIndicator.Top 
+                ? _lines[(int)line] 
+                : _lines[5 - (int)line];
+
+        internal List<CardModel> GetLine(LineIndicator line) => _lines[(int)line];
+
+        internal LineIndicator GetLineIndicator(PlayerIndicator player, PlayerLine line)
+            => player == PlayerIndicator.Top
+                ? (LineIndicator)(int)line
+                : (LineIndicator)(5 - (int)line);
 
         void StartNextTurnInternal()
         {
@@ -110,28 +119,28 @@ namespace Assets.Core
             }
         }
 
-        internal Line MapPlayerLine(PlayerIndicator player, PlayerLine line)
+        internal LineIndicator MapPlayerLine(PlayerIndicator player, PlayerLine line)
         {
             if (player == PlayerIndicator.Top)
                 switch(line)
                 {
-                    case PlayerLine.Deck: return Line.TopDeck;
-                    case PlayerLine.Backline: return Line.TopBackline;
-                    case PlayerLine.Frontline: return Line.TopFrontline;
+                    case PlayerLine.Deck: return LineIndicator.TopDeck;
+                    case PlayerLine.Backline: return LineIndicator.TopBackline;
+                    case PlayerLine.Frontline: return LineIndicator.TopFrontline;
                 }
             else if(player == PlayerIndicator.Bot)
                 switch (line)
                 {
-                    case PlayerLine.Deck: return Line.BotDeck;
-                    case PlayerLine.Backline: return Line.BotBackline;
-                    case PlayerLine.Frontline: return Line.BotFrontline;
+                    case PlayerLine.Deck: return LineIndicator.BotDeck;
+                    case PlayerLine.Backline: return LineIndicator.BotBackline;
+                    case PlayerLine.Frontline: return LineIndicator.BotFrontline;
                 }
 
             throw new Exception("Unreachable code reached! "
                 + "PlayerIndicator or PlayerLine enumerator must have been extended without extending the MapPlayerLine function.");
         }
 
-        public void MoveCardForUI(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        public void MoveCardForUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             #region Assertions
 #if UNITY_EDITOR
@@ -172,9 +181,9 @@ namespace Assets.Core
 
         public void MoveCardForAI(MoveData moveData)
         {
-            Line fromLine = moveData.FromLine;
+            LineIndicator fromLine = moveData.FromLine;
             int fromSlotNumber = moveData.FromSlotNumber;
-            Line targetLine = moveData.TargetLine;
+            LineIndicator targetLine = moveData.TargetLine;
             int targetSlotNumber = moveData.TargetSlotNumber;
 
             #region Assertions
@@ -212,7 +221,7 @@ namespace Assets.Core
             }
         }
 
-        void ApplySkillEffectIfAny(CardModel card, Line deployLine, int slotNumber)
+        void ApplySkillEffectIfAny(CardModel card, LineIndicator deployLine, int slotNumber)
         {
             CardSkill skill = DB[card.CardId].Skill;
             if (skill != null)
@@ -220,44 +229,42 @@ namespace Assets.Core
                 var targets = new List<CardModel>();
 
                 foreach (SkillTarget target in skill.Targets)
-                    targets.AddRange(ParseCardSkillTarget(deployLine, slotNumber, target));
+                    targets.AddRange(ParseOnDeployAutomaticSkillTarget(deployLine, slotNumber, target));
 
                 foreach (CardModel target in targets)
                     skill.Effect(target);
             }
         }
 
-        internal void ApplySkillEffectForAI(CardSkill skill, Line deployLine, int slotNumber)
-        {
-            var targets = new List<CardModel>();
-
-            foreach (SkillTarget target in skill.Targets)
-                targets.AddRange(ParseCardSkillTarget(deployLine, slotNumber, target));
-
-            foreach (CardModel target in targets)
-                skill.Effect(target);
-        }
-
-        List<CardModel> ParseCardSkillTarget(Line targetLine, int targetSlotNumber, SkillTarget target)
+        internal List<CardModel> ParseOnDeployAutomaticSkillTarget(LineIndicator line, int slotNumber, SkillTarget target)
         {
             if (target == SkillTarget.CorrespondingEnemyLine)
-            {
-                int correspondingLineID = 5 - (int)targetLine;
-                return _lines[correspondingLineID];
-            }
+                return _lines[(int)line.Opposite()];
 
-            List<CardModel> cards = _lines[(int)targetLine];
+            List<CardModel> cards = _lines[(int)line];
             if (target == SkillTarget.AllInLineExceptMe)
-                return cards.GetAllExceptOne(targetSlotNumber).ToList();
+                return cards.GetAllExceptOne(slotNumber).ToList();
             if (target == SkillTarget.LeftNeighbor)
-                return cards.GetLeftNeighbor(targetSlotNumber).ToList();
+                return cards.GetLeftNeighbor(slotNumber).ToList();
             if (target == SkillTarget.BothNeighbors)
-                return cards.GetBothNeighbors(targetSlotNumber).ToList();
+                return cards.GetBothNeighbors(slotNumber).ToList();
             if (target == SkillTarget.RightNeighbor)
-                return cards.GetRightNeighbor(targetSlotNumber).ToList();
+                return cards.GetRightNeighbor(slotNumber).ToList();
 
             throw new Exception("Unreachable code reached! "
                 + "CardSkillTarget enumerator must have been extended without extending the ParseCardSkillTarget function.");
+        }
+
+        internal void ApplySkillEffectForAI(CardSkill skill, List<SkillTargetData> targets)
+        {
+            foreach (SkillTargetData target in targets)
+                skill.Effect(_lines[(int)target.Line][target.SlotNumber]);
+        }
+
+        internal void ApplySkillEffectForAISingleTarget(CardSkill skill, LineIndicator targetLine, int slotNumber)
+        {
+            CardModel card = _lines[(int)targetLine][slotNumber];
+            skill.Effect(card);
         }
 
         /// <summary>
@@ -313,13 +320,13 @@ namespace Assets.Core
                     LastMove = move
                 });
 
-        internal void BroadcastPlaySkillVFX((Line targetLine, int targetSlot) skillTarget, CardSkill skill)
+        internal void BroadcastPlaySkillVFX(List<SkillTargetData> targets, SkillVisualEffect visualEffect)
             => GameLogicStatusChangedEventHandler?.Invoke(
                 this, 
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.PlaySkillVFX, CurrentPlayer)
                 {
-                    SkillTarget = skillTarget,
-                    Skill = skill
+                    Targets = targets,
+                    VisualEffect = visualEffect
                 });
 
         // early evaluation
@@ -364,7 +371,7 @@ namespace Assets.Core
 
         #region Assertions
 #if UNITY_EDITOR
-        void MoveDataAssertions(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber)
+        void MoveDataAssertions(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)
                 throw new System.ArgumentOutOfRangeException(
@@ -376,20 +383,20 @@ namespace Assets.Core
                     "targetSlotNumber",
                     "TargetSlotNumber cannot be lower than 0 or greater than the number of cards in the line.");
 
-            if (targetLine == Line.TopDeck || targetLine == Line.BotDeck)
+            if (targetLine == LineIndicator.TopDeck || targetLine == LineIndicator.BotDeck)
                 throw new System.ArgumentException("Moving card to a deck is not allowed.");
 
             if (fromLine == targetLine)
                 throw new System.ArgumentException("Moving card to the same line is not allowed.");
 
-            if ((fromLine == Line.BotDeck || fromLine == Line.BotBackline || fromLine == Line.BotFrontline)
+            if ((fromLine == LineIndicator.BotDeck || fromLine == LineIndicator.BotBackline || fromLine == LineIndicator.BotFrontline)
                 &&
-                (targetLine == Line.TopDeck || targetLine == Line.TopBackline || targetLine == Line.TopFrontline))
+                (targetLine == LineIndicator.TopDeck || targetLine == LineIndicator.TopBackline || targetLine == LineIndicator.TopFrontline))
                 throw new System.ArgumentException("Moving card from any bot line to any top line is not allowed.");
 
-            if ((fromLine == Line.TopDeck || fromLine == Line.TopBackline || fromLine == Line.TopFrontline)
+            if ((fromLine == LineIndicator.TopDeck || fromLine == LineIndicator.TopBackline || fromLine == LineIndicator.TopFrontline)
                 &&
-                (targetLine == Line.BotDeck || targetLine == Line.BotBackline || targetLine == Line.BotFrontline))
+                (targetLine == LineIndicator.BotDeck || targetLine == LineIndicator.BotBackline || targetLine == LineIndicator.BotFrontline))
                 throw new System.ArgumentException("Moving card from any top line to any bot line is not allowed.");
         }
 #endif

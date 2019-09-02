@@ -2,6 +2,7 @@
 using Assets.Core.DataModel;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -50,11 +51,22 @@ namespace Assets.Core
             CardSkill skill = GameLogic.DB[move.Card.CardId].Skill;
             if(skill != null)
             {
-                // upon execution the upper logic should start playing skill animation
-                _taskQueue.Enqueue(() => PlaySkillVFX(skill, move.TargetLine, move.TargetSlotNumber));
+                List<SkillTargetData> targets = new List<SkillTargetData>(); // can be empty
 
-                // upon execution the upper logic should apply skill effect
-                _taskQueue.Enqueue(() => ApplySkill(skill, move.TargetLine, move.TargetSlotNumber));
+                if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
+                    targets = GetTargetsOnDeployAutomatic(skill, move.TargetLine, move.TargetSlotNumber);
+                else if (skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
+                {
+                    var singleTarget = ChooseBestSingleTarget();
+                    if(singleTarget != null)
+                        targets.Add(singleTarget);
+                }
+
+                // upon execution of this task the upper logic should start playing skill's animation
+                _taskQueue.Enqueue(() => PlaySkillVFX(skill, targets));
+
+                // upon execution of this task the upper logic should start applying skill's effect
+                _taskQueue.Enqueue(() => ApplySkill(skill, targets));
             }
 
             // upon execution the upper logic should update card strengths
@@ -67,7 +79,7 @@ namespace Assets.Core
             _gameLogic.BroadcastMoveCard(move);
         }
 
-        public void ReturnControl()
+        internal void ReturnControl()
         {
             if(_taskQueue.Count > 0)
                 _taskQueue.Dequeue().Invoke();
@@ -77,7 +89,7 @@ namespace Assets.Core
         /// If fakeThinking parameter is true, AI will wait random amount of time 
         /// between MIN_THINKING_TIME and MAX_THINKING_TIME measured in milliseconds before the execution continues.
         /// </summary>
-        internal async Task<MoveData> CalculateBestMove()
+        async Task<MoveData> CalculateBestMove()
         {
             // How to make a game-changing move in 3 steps:
             // 1. choose a random card from your deck
@@ -106,26 +118,95 @@ namespace Assets.Core
             return new MoveData(_myDeck[fromSlotNumber], _myIndicator, fromSlotNumber, line, targetSlotNumber);
         }
 
-        internal void PlaySkillVFX(CardSkill skill, Line line, int slotNumber)
+        /// <summary>
+        /// Returns null if there is no targets to chose from.
+        /// </summary>
+        SkillTargetData ChooseBestSingleTarget()
         {
-            //Debug.Log($"AI {MyIndicator} invoked PlaySkillVFX action");
-            _gameLogic.BroadcastPlaySkillVFX((line, slotNumber), skill);
+            List<CardModel> enemyBackline = _gameLogic.GetLine(_myIndicator.Opposite(), PlayerLine.Backline);
+            List<CardModel> enemyFrontline = _gameLogic.GetLine(_myIndicator.Opposite(), PlayerLine.Frontline);
+
+            if (enemyBackline.Count > 0 && enemyFrontline.Count > 0)
+                return UnityEngine.Random.Range(0, 2) == 0 // both enemy lines contains units so choose one randomly
+                    ? CreateTargetData(PlayerLine.Backline, enemyBackline.Count)
+                    : CreateTargetData(PlayerLine.Frontline, enemyFrontline.Count);
+            else if(enemyBackline.Count > 0)
+                return CreateTargetData(PlayerLine.Backline, enemyBackline.Count);
+            else if(enemyFrontline.Count > 0)
+                return CreateTargetData(PlayerLine.Frontline, enemyFrontline.Count);
+            else
+                return null;
+
+            SkillTargetData CreateTargetData(PlayerLine line, int count) 
+                => new SkillTargetData(
+                    _gameLogic.GetLineIndicator(_myIndicator.Opposite(), line), 
+                    UnityEngine.Random.Range(0, count));
         }
 
-        internal void ApplySkill(CardSkill skill, Line line, int slotNumber)
+        List<SkillTargetData> GetTargetsOnDeployAutomatic(CardSkill skill, LineIndicator targetLine, int slotNumber)
+        {
+            var targets = new List<SkillTargetData>();
+
+            foreach (SkillTarget target in skill.Targets)
+                targets.AddRange(ParseOnDeployAutomaticSkillTargetInternal(targetLine, slotNumber, target));
+
+            return targets;
+        }
+
+        internal List<SkillTargetData> ParseOnDeployAutomaticSkillTargetInternal(LineIndicator line, int slotNumber, SkillTarget target)
+        {
+            var targets = new List<SkillTargetData>();
+            List<CardModel> cards;
+
+            // corresponding enemy line
+            if (target == SkillTarget.CorrespondingEnemyLine)
+            {
+                cards = _gameLogic.GetLine(line.Opposite());
+                for (int i = 0; i < cards.Count; i++)
+                    targets.Add(new SkillTargetData(line.Opposite(), i));
+
+                return targets;
+            }
+
+            // our line
+            if (target == SkillTarget.AllInLineExceptMe)
+                cards = _gameLogic.GetLine(line).GetAllExceptOne(slotNumber).ToList();
+            else if (target == SkillTarget.LeftNeighbor)
+                cards = _gameLogic.GetLine(line).GetLeftNeighbor(slotNumber).ToList();
+            else if (target == SkillTarget.BothNeighbors)
+                cards = _gameLogic.GetLine(line).GetBothNeighbors(slotNumber).ToList();
+            else if (target == SkillTarget.RightNeighbor)
+                cards = _gameLogic.GetLine(line).GetRightNeighbor(slotNumber).ToList();
+            else
+                throw new Exception("Unreachable code reached! "
+                    + "CardSkillTarget enumerator must have been extended without extending the ParseCardSkillTarget function.");
+
+            foreach(CardModel model in cards)
+                targets.Add(new SkillTargetData(line, model.SlotNumber));
+
+            return targets;
+        }
+
+        void PlaySkillVFX(CardSkill skill, List<SkillTargetData> targets)
+        {
+            //Debug.Log($"AI {MyIndicator} invoked PlaySkillVFX action");
+            _gameLogic.BroadcastPlaySkillVFX(targets, skill.VisualEffect);
+        }
+
+        void ApplySkill(CardSkill skill, List<SkillTargetData> targets)
         {
             //Debug.Log($"AI {MyIndicator} invoked ApplySkill action");
-            _gameLogic.ApplySkillEffectForAI(skill, line, slotNumber);
+            _gameLogic.ApplySkillEffectForAI(skill, targets);
             _gameLogic.BroadcastUpdateStrength();
         }
 
-        internal void UpdateStrength()
+        void UpdateStrength()
         {
             //Debug.Log($"AI {MyIndicator} invoked UpdateStrength action");
             _gameLogic.BroadcastUpdateStrength();
         }
 
-        internal void EndTurn()
+        void EndTurn()
         {
             Debug.Log($"AI {MyIndicatorToStr} invoked EndTurn action");
             _gameLogic.EndTurnMsgSent = true; // indicates that AI is done

@@ -6,6 +6,6 @@ namespace Assets.Scripts.Interfaces
     {
         void HandleEndTurnAction();
 
-        void HandleInterfaceMoveCardRequest(Line fromLine, int fromSlotNumber, Line targetLine, int targetSlotNumber);
+        void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber);
     }
 }

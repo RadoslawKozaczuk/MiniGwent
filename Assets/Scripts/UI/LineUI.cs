@@ -18,19 +18,15 @@ namespace Assets.Scripts.UI
 
         public int Count => Cards.Count;
 
+        public List<CardUI> Cards = new List<CardUI>();
         public bool Outline = false;
-        public Line LineIndicator;
+        public LineIndicator LineIndicator;
         public PlayerIndicator PlayerIndicator;
 
         OutlineController _outline;
-
-        public List<CardUI> Cards = new List<CardUI>();
-
-        GameObject targetSlotIndicator;
-
+        GameObject _targetSlotIndicator;
         GridLayoutGroup _gridLayoutGroup;
-
-        bool isMouseOver;
+        bool _isMouseOver;
 
         void Awake()
         {
@@ -44,20 +40,20 @@ namespace Assets.Scripts.UI
 
         void Update()
         {
-            if (isMouseOver 
+            if (_isMouseOver 
                 && MainUIController.CardBeingDraged 
                 && MainUIController.CardBeingDraged.ParentLineUI != this
-                && targetSlotIndicator)
+                && _targetSlotIndicator)
             {
                 TargetSlotPositionNumber = GetTargetSlotPositionNumber();
-                targetSlotIndicator.transform.SetSiblingIndex(TargetSlotPositionNumber);
+                _targetSlotIndicator.transform.SetSiblingIndex(TargetSlotPositionNumber);
             }
         }
 
         #region Interfaces Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            isMouseOver = true;
+            _isMouseOver = true;
 
             CardUI card = MainUIController.CardBeingDraged;
             if (card != null
@@ -67,7 +63,7 @@ namespace Assets.Scripts.UI
                 _outline.TurnPulsationOn();
 
                 // create empty
-                targetSlotIndicator = Instantiate(MainUIController.Instance.TargetSlotIndicatorPrefab, transform);
+                _targetSlotIndicator = Instantiate(MainUIController.Instance.TargetSlotIndicatorPrefab, transform);
 
                 RecalculateSpacing();
             }
@@ -75,7 +71,7 @@ namespace Assets.Scripts.UI
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            isMouseOver = false;
+            _isMouseOver = false;
 
             DestroyTargetSlotIndicator();
 
@@ -157,16 +153,16 @@ namespace Assets.Scripts.UI
 
         public void DestroyTargetSlotIndicator()
         {
-            if (targetSlotIndicator == null)
+            if (_targetSlotIndicator == null)
                 return;
 
             // remove from the horizontal group and move out of the map
             Transform dump = MainUIController.Instance.ObjectDump.transform;
-            targetSlotIndicator.transform.SetParent(dump);
-            targetSlotIndicator.transform.position = dump.position;
+            _targetSlotIndicator.transform.SetParent(dump);
+            _targetSlotIndicator.transform.position = dump.position;
 
-            Destroy(targetSlotIndicator);
-            targetSlotIndicator = null;
+            Destroy(_targetSlotIndicator);
+            _targetSlotIndicator = null;
 
             RecalculateSpacing();
         }
