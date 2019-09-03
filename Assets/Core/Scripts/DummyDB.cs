@@ -61,7 +61,7 @@ namespace Assets.Core
                 ),
             new CardData(
                 title: "Troll",
-                description: "When deployed he troll ally unit on the left side inflicting 1 DMG. "
+                description: "When deployed he trolls an ally unit on the left side inflicting 1 DMG. "
                     + "But that's not all he also trolls the whole enemy corresponding line inflicting 1 DMG to every unit.",
                 strength: 5,
                 skill: new CardSkill(
@@ -72,7 +72,7 @@ namespace Assets.Core
                 ),
             new CardData(
                 title: "Unicorn",
-                description: "When deployed heal ally on the left side by 3.",
+                description: "When deployed heal an ally on the left side by 3.",
                 strength: 5,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployAutomatic,
@@ -80,6 +80,26 @@ namespace Assets.Core
                     effect: card => card.CurrentStrength += 3,
                     visualEffect: SkillVisualEffect.Heal)
                 ),
+            new CardData(
+                title: "Sorceress",
+                description: "When deployed she casts a powerful spell, healing 1 strength of each unit (including herself) in the line of choice.",
+                strength: 5,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployManual,
+                    targets: new List<SkillTarget> { SkillTarget.AllyLine },
+                    effect: card => card.CurrentStrength += 1,
+                    visualEffect: SkillVisualEffect.Heal)
+                ),
+            new CardData(
+                title: "Wizard",
+                description: "When deployed he unleashes powerful fire magic, inflicting 2 damage to all units in the line of choice.",
+                strength: 5,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployManual,
+                    targets: new List<SkillTarget> { SkillTarget.EnemyLine },
+                    effect: card => card.CurrentStrength -= 2,
+                    visualEffect: SkillVisualEffect.FireBall)
+                )
         };
     }
 }

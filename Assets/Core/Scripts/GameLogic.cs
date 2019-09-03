@@ -92,16 +92,21 @@ namespace Assets.Core
             }
         }
 
-        public void ApplySkillForUI(SkillTargetData target, CardSkill skill)
+        public void ApplySkillForUI(List<SkillTargetData> targets, CardSkill skill)
         {
 #if UNITY_EDITOR
             if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
                 throw new ArgumentException("skill", "this method should be used only for manually resolved skills");
 #endif
 
-            // parse target to model
-            CardModel model = _lines[(int)target.Line][target.SlotNumber];
-            skill.Effect(model); // apply the skill
+            var models = new List<CardModel>(targets.Count);
+            foreach(SkillTargetData target in targets)
+            {
+                // parse target to model
+                CardModel model = _lines[(int)target.Line][target.SlotNumber];
+                models.Add(model);
+                skill.Effect(model); // apply the skill
+            }
 
             // it's important to evaluate strengths before RemoveDeadOnes is called
             // as we want our data match the upper logic's data 
@@ -110,6 +115,9 @@ namespace Assets.Core
 
             // remove dead ones
             RemoveDeadOnes();
+
+            // inform status panel
+            BroadcastSkillEffect_LogUpdate(CurrentPlayer, models, skill);
 
             // inform upper logic about new strengths
             BroadcastUpdateStrength_StatusUpdate(cardStrengths);
@@ -131,6 +139,7 @@ namespace Assets.Core
 
             CardModel card = fLine[fromSlotNumber];
             card.SlotNumber = targetSlotNumber;
+            card.CurrentLine = targetLine;
 
             fLine.RemoveAt(fromSlotNumber);
 
@@ -213,17 +222,19 @@ namespace Assets.Core
 
             CardModel card = fLine[fromSlotNumber];
             card.SlotNumber = targetSlotNumber;
-
-            fLine.RemoveAt(fromSlotNumber);
+            card.CurrentLine = targetLine;
 
             // all cards on the right must have their SlotNumber reduced by one
             fLine.AllOnTheRight(fromSlotNumber, c => c.SlotNumber--);
-            tLine.AllOnTheRight(targetSlotNumber, c => c.SlotNumber++);
+            fLine.RemoveAt(fromSlotNumber);
 
             if (targetSlotNumber == tLine.Count)
                 tLine.Add(card);
             else
+            {
                 tLine.Insert(targetSlotNumber, card);
+                tLine.AllOnTheRight(targetSlotNumber, c => c.SlotNumber++);
+            }
 
             BroadcastCardMove_LogUpdate(player, moveData);
         }
@@ -325,7 +336,7 @@ namespace Assets.Core
             {
                 sb.Append($"{i + 1}. ");
                 foreach (CardModel c in _lines[i])
-                    sb.Append(c);
+                    sb.Append(c.ToStringIdStrDefstr());
                 sb.AppendLine();
             }
 
@@ -481,14 +492,11 @@ namespace Assets.Core
             bool heals = dummy.CurrentStrength > dummy.DefaultStrength; // true - heals, false - damages
             int howPowerful = Math.Abs(dummy.DefaultStrength - dummy.CurrentStrength);
 
-            string cardTitle = "ToBeDetermined";
             string lastExecutedCommand = $"<b>{CurrentPlayer.ToString()} Player's</b> card ";
-            if (targets.Count == 1)
-                lastExecutedCommand = $"<color=yellow>{cardTitle}</color> {HealsOrDamages()} "
-                    + $"<color=yellow>{DB[targets[0].CardId].Title}</color> for {howPowerful} point(s)";
-            else // many targets
-                lastExecutedCommand = $" <color=yellow>{cardTitle}</color> "
-                    + $"{HealsOrDamages()} following cards: " + string.Join(", ", targets);
+            lastExecutedCommand += targets.Count == 1
+                ? $"{HealsOrDamages()} <color=yellow>{DB[targets[0].CardId].Title}</color> for {howPowerful} point(s)"
+                : $"{HealsOrDamages()} following cards: " + string.Join(", ", targets) // many targets
+                    + $" for total of {howPowerful * targets.Count} point(s)"; 
 
             string HealsOrDamages() => heals ? "<color=green>heals</color>" : "<color=red>damages</color>";
 

@@ -40,7 +40,7 @@ namespace Assets.Core
         {
             _taskQueue.Clear();
 
-            Task<MoveData> task = CalculateBestMove(); // this already starts the task
+            Task<MoveData> task = CalculateMove(); // this already starts the task
             await Task.WhenAll(task);
 
             MoveData move = task.Result;
@@ -57,9 +57,22 @@ namespace Assets.Core
                     targets = GetTargetsOnDeployAutomatic(skill, move.TargetLine, move.TargetSlotNumber);
                 else if (skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
                 {
-                    var singleTarget = ChooseBestSingleTarget();
-                    if(singleTarget != null)
-                        targets.Add(singleTarget);
+                    foreach(SkillTarget target in skill.Targets)
+                    {
+                        if(target == SkillTarget.SingleEnemy)
+                        {
+                            var singleTarget = ChooseSingleTarget();
+                            if (singleTarget != null)
+                                targets.Add(singleTarget);
+                        }
+                        else if(target == SkillTarget.EnemyLine)
+                            targets.AddRange(GetEnemyLineTargets());
+                        else if(target == SkillTarget.AllyLine)
+                            targets.AddRange(GetAllyLineTargets());
+                        else
+                            throw new Exception("Unreachable code reached! "
+                                + "SkillTarget must have been extended without extending the AI's logic.");
+                    }
                 }
 
                 // upon execution of this task the upper logic should start playing skill's animation
@@ -89,7 +102,7 @@ namespace Assets.Core
         /// If fakeThinking parameter is true, AI will wait random amount of time 
         /// between MIN_THINKING_TIME and MAX_THINKING_TIME measured in milliseconds before the execution continues.
         /// </summary>
-        async Task<MoveData> CalculateBestMove()
+        async Task<MoveData> CalculateMove()
         {
             // How to make a game-changing move in 3 steps:
             // 1. choose a random card from your deck
@@ -121,26 +134,107 @@ namespace Assets.Core
         /// <summary>
         /// Returns null if there is no targets to chose from.
         /// </summary>
-        SkillTargetData ChooseBestSingleTarget()
+        SkillTargetData ChooseSingleTarget()
         {
             List<CardModel> enemyBackline = _gameLogic.GetLine(_myIndicator.Opposite(), PlayerLine.Backline);
             List<CardModel> enemyFrontline = _gameLogic.GetLine(_myIndicator.Opposite(), PlayerLine.Frontline);
 
             if (enemyBackline.Count > 0 && enemyFrontline.Count > 0)
                 return UnityEngine.Random.Range(0, 2) == 0 // both enemy lines contains units so choose one randomly
-                    ? CreateTargetData(PlayerLine.Backline, enemyBackline.Count)
-                    : CreateTargetData(PlayerLine.Frontline, enemyFrontline.Count);
+                    ? GetSingleTarget(PlayerLine.Backline, enemyBackline.Count)
+                    : GetSingleTarget(PlayerLine.Frontline, enemyFrontline.Count);
             else if(enemyBackline.Count > 0)
-                return CreateTargetData(PlayerLine.Backline, enemyBackline.Count);
+                return GetSingleTarget(PlayerLine.Backline, enemyBackline.Count);
             else if(enemyFrontline.Count > 0)
-                return CreateTargetData(PlayerLine.Frontline, enemyFrontline.Count);
-            else
-                return null;
+                return GetSingleTarget(PlayerLine.Frontline, enemyFrontline.Count);
+            
+            return null;
 
-            SkillTargetData CreateTargetData(PlayerLine line, int count) 
+            SkillTargetData GetSingleTarget(PlayerLine line, int count) 
                 => new SkillTargetData(
                     _gameLogic.GetLineIndicator(_myIndicator.Opposite(), line), 
                     UnityEngine.Random.Range(0, count));
+        }
+
+        List<SkillTargetData> GetEnemyLineTargets()
+        {
+            var targets = new List<SkillTargetData>();
+
+            List<CardModel> enemyBackline = _gameLogic.GetLine(_myIndicator.Opposite(), PlayerLine.Backline);
+            List<CardModel> enemyFrontline = _gameLogic.GetLine(_myIndicator.Opposite(), PlayerLine.Frontline);
+
+            LineIndicator targetLine;
+            int count;
+
+            if (enemyBackline.Count > 0 && enemyFrontline.Count > 0)
+            {
+                if (UnityEngine.Random.Range(0, 2) == 0)
+                {
+                    targetLine = _gameLogic.MapPlayerLine(_myIndicator.Opposite(), PlayerLine.Backline);
+                    count = enemyBackline.Count;
+                }
+                else
+                {
+                    targetLine = _gameLogic.MapPlayerLine(_myIndicator.Opposite(), PlayerLine.Frontline);
+                    count = enemyFrontline.Count;
+                }
+            }
+            else if (enemyBackline.Count > 0)
+            {
+                targetLine = _gameLogic.MapPlayerLine(_myIndicator.Opposite(), PlayerLine.Backline);
+                count = enemyBackline.Count;
+            }
+            else if (enemyFrontline.Count > 0)
+            {
+                targetLine = _gameLogic.MapPlayerLine(_myIndicator.Opposite(), PlayerLine.Frontline);
+                count = enemyFrontline.Count;
+            }
+            else
+                return new List<SkillTargetData>();
+
+            for (int i = 0; i < count; i++)
+                targets.Add(new SkillTargetData(targetLine, i));
+
+            return targets;
+        }
+
+        List<SkillTargetData> GetAllyLineTargets()
+        {
+            var targets = new List<SkillTargetData>();
+
+            LineIndicator targetLine;
+            int count;
+
+            if (_myBackline.Count > 0 && _myFrontline.Count > 0)
+            {
+                if (UnityEngine.Random.Range(0, 2) == 0)
+                {
+                    targetLine = _gameLogic.MapPlayerLine(_myIndicator, PlayerLine.Backline);
+                    count = _myBackline.Count;
+                }
+                else
+                {
+                    targetLine = _gameLogic.MapPlayerLine(_myIndicator, PlayerLine.Frontline);
+                    count = _myFrontline.Count;
+                }
+            }
+            else if (_myBackline.Count > 0)
+            {
+                targetLine = _gameLogic.MapPlayerLine(_myIndicator, PlayerLine.Backline);
+                count = _myBackline.Count;
+            }
+            else if (_myFrontline.Count > 0)
+            {
+                targetLine = _gameLogic.MapPlayerLine(_myIndicator, PlayerLine.Frontline);
+                count = _myFrontline.Count;
+            }
+            else
+                return new List<SkillTargetData>();
+
+            for (int i = 0; i < count; i++)
+                targets.Add(new SkillTargetData(targetLine, i));
+
+            return targets;
         }
 
         List<SkillTargetData> GetTargetsOnDeployAutomatic(CardSkill skill, LineIndicator targetLine, int slotNumber)
@@ -148,12 +242,12 @@ namespace Assets.Core
             var targets = new List<SkillTargetData>();
 
             foreach (SkillTarget target in skill.Targets)
-                targets.AddRange(ParseOnDeployAutomaticSkillTargetInternal(targetLine, slotNumber, target));
+                targets.AddRange(ParseOnDeployAutomatic(targetLine, slotNumber, target));
 
             return targets;
         }
 
-        internal List<SkillTargetData> ParseOnDeployAutomaticSkillTargetInternal(LineIndicator line, int slotNumber, SkillTarget target)
+        List<SkillTargetData> ParseOnDeployAutomatic(LineIndicator line, int slotNumber, SkillTarget target)
         {
             var targets = new List<SkillTargetData>();
             List<CardModel> cards;
@@ -189,26 +283,20 @@ namespace Assets.Core
 
         void PlaySkillVFX(CardSkill skill, List<SkillTargetData> targets)
         {
-            //Debug.Log($"AI {MyIndicator} invoked PlaySkillVFX action");
             _gameLogic.BroadcastPlayVFX_StatusUpdate(targets, skill.VisualEffect);
         }
 
         void ApplySkill(CardSkill skill, List<SkillTargetData> targets)
         {
-            //Debug.Log($"AI {MyIndicator} invoked ApplySkill action");
             _gameLogic.ApplySkillEffectForAI(skill, targets);
             _gameLogic.BroadcastUpdateStrength_StatusUpdate();
         }
 
-        void UpdateStrength()
-        {
-            //Debug.Log($"AI {MyIndicator} invoked UpdateStrength action");
-            _gameLogic.BroadcastUpdateStrength_StatusUpdate();
-        }
+        void UpdateStrength() => _gameLogic.BroadcastUpdateStrength_StatusUpdate();
 
         void EndTurn()
         {
-            _gameLogic.EndTurnMsgSent = true; // indicates that AI is done
+            _gameLogic.EndTurnMsgSent = true; // indicates that AI's turn is over
             _gameLogic.BroadcastEndTurn_StatusUpdate();
         }
     }

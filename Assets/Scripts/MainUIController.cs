@@ -17,8 +17,19 @@ namespace Assets.Scripts
         public static Sprite[] Icons;
         public static CardUI CardBeingDraged;
         public static CardUI CardMouseOver; // card with mouse over it
-        public static CardUI CardSelected; // card with mouse over it
+        public static CardUI CardSelected;
+        public static LineUI LineMouseOver;
+
+        // control flags
         public static bool BlockDragAction;
+        public static bool SingleTargetSelectMode;
+        public static bool EnemyLineSelectMode;
+        public static bool AllyLineSelectMode;
+        public static bool ShowUIMode;
+        public static bool MouseHoveringOverPopulatedAllyLine;
+        public static bool MouseHoveringOverAllyUnit;
+        public static bool MouseHoveringOverPopulatedEnemyLine;
+        public static bool MouseHoveringOverEnemyUnit;
 
         PlayerIndicator _currentPlayer;
         public PlayerIndicator CurrentPlayer
@@ -44,34 +55,22 @@ namespace Assets.Scripts
         public GameObject CardPrefab;
         public GameObject TargetSlotIndicatorPrefab;
 
-        // static ui elements
+        // public UI elements
         public CardInfoUI CardInfoPanel;
-        public EndGamePanelUI EndGamePanel;
-        public GameObject BlackBackground;
-        GameLogic _gameLogic;
-
-        [SerializeField] StatusPanelUI _statusPanel;
-        [SerializeField] GameObject _linesGroup;
-        [SerializeField] EndTurnPanelUI _endTurnPanel;
-
-        // top control
-        readonly PlayerControl _topPlayerControl = PlayerControl.AI; // always AI
-        PlayerControl _botPlayerControl;
-
         public RectTransform ObjectDump;
-        public VFXController VFXController;
-
-        // canvases
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
 
-        public static bool TargetSelectMode;
-        public static bool ShowUIMode;
-        public static bool MouseHoveringOverAllyLine;
-        public static bool MouseHoveringOverAllyUnit;
-        public static bool MouseHoveringOverEnemyLine;
-        public static bool MouseHoveringOverEnemyUnit;
+        [SerializeField] EndGamePanelUI _endGamePanel;
+        [SerializeField] GameObject _blackBackground;
+        [SerializeField] StatusPanelUI _statusPanel;
+        [SerializeField] GameObject _linesGroup;
+        [SerializeField] EndTurnPanelUI _endTurnPanel;
+        [SerializeField] VFXController _vfxController;
 
+        readonly PlayerControl _topPlayerControl = PlayerControl.AI; // always AI
+        PlayerControl _botPlayerControl;
+        GameLogic _gameLogic;
         LineUI[] _lines;
 
         #region Unity life-cycle methods
@@ -90,8 +89,18 @@ namespace Assets.Scripts
                 HandleEndTurnAction();
             else if(Input.GetMouseButtonDown(0))
             {
-                if(TargetSelectMode && MouseHoveringOverEnemyUnit)
-                    HandleTargetSelected();
+                if(SingleTargetSelectMode && MouseHoveringOverEnemyUnit)
+                    HandleSingleTargetSelected();
+                else if(EnemyLineSelectMode && MouseHoveringOverPopulatedEnemyLine)
+                {
+                    EnemyLineSelectMode = false;
+                    HandleLineSelected();
+                }
+                else if (AllyLineSelectMode && MouseHoveringOverPopulatedAllyLine)
+                {
+                    AllyLineSelectMode = false;
+                    HandleLineSelected();
+                }
             }
         }
         #endregion
@@ -106,54 +115,45 @@ namespace Assets.Scripts
             #endregion
 
             CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-
-            // do I need a target or not
             CardSkill skill = DB[movedCard.Id].Skill;
 
             if (skill == null)
             {
-                // apply the effects - this will also apply card skill effects if any
-                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-
-                // later on add some extra logic like check if all cards action are played or something like that
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
                 _endTurnPanel.SetNothingElseToDo();
-
                 BlockDragAction = true;
             }
-            // targets can be autoresolved
             else if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
             {
                 await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
-
-                // apply the effects - this will also apply card skill effects if any
-                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-
-                // later on add some extra logic like check if all cards action are played or something like that
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, applySkill: true);
                 _endTurnPanel.SetNothingElseToDo();
-
                 BlockDragAction = true;
             }
-            else if (skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
+            else if (skill.ExecutionTime == SkillExecutionTime.OnDeployManual
+                &&
+                // ally line and ally targets present
+                ((skill.Targets[0] == SkillTarget.AllyLine && (_botBackline.Count > 0 || _botFrontline.Count > 0))
+                // enemy and enemy target present
+                || _topBackline.Count > 0 || _topFrontline.Count > 0))
             {
-                // check if any possible targets
-                if (_topBackline.Count > 0 || _topFrontline.Count > 0)
-                {
-                    // waiting for user response
-                    _endTurnPanel.SetSelectTarget();
-                    TargetSelectMode = true;
+                if (skill.Targets[0] == SkillTarget.AllyLine)
+                    AllyLineSelectMode = true;
+                else if (skill.Targets[0] == SkillTarget.AllyLine)
+                    SingleTargetSelectMode = true;
+                else if (skill.Targets[0] == SkillTarget.EnemyLine)
+                    EnemyLineSelectMode = true;
 
-                    CardSelected = _lines[(int)targetLine][targetSlotNumber];
-
-                    // just deployed card need to be constantly outlined (without pulsation)
-                    // any enemy card need to highlighted with red pulsation instead of blue
-                }
-                else
-                {
-                    _endTurnPanel.SetNothingElseToDo();
-                }
-
-                // apply the effects - this will NOT apply the card skill effects
                 _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
+
+                // waiting for user response
+                _endTurnPanel.SetSelectTarget();
+                CardSelected = _lines[(int)targetLine][targetSlotNumber];
+            }
+            else
+            {
+                _endTurnPanel.SetNothingElseToDo();
+                BlockDragAction = true;
             }
         }
 
@@ -167,23 +167,45 @@ namespace Assets.Scripts
             BlockDragAction = true;
         }
 
-        public async void HandleTargetSelected()
+        public async void HandleSingleTargetSelected()
         {
-            TargetSelectMode = false;
+            SingleTargetSelectMode = false;
 
-            var target = new SkillTargetData(CardMouseOver.ParentLineUI.LineIndicator, CardMouseOver.SlotNumber);
+            var targets = new List<SkillTargetData>(1)
+            {
+                new SkillTargetData(CardMouseOver.ParentLineUI.LineIndicator, CardMouseOver.SlotNumber)
+            };
+
             CardSkill skill = DB[CardSelected.Id].Skill;
             CardSelected = null;
 
-            await DisplayVisualEffects(new List<SkillTargetData>(1) { target }, skill.VisualEffect);
+            await DisplayVisualEffects(targets, skill.VisualEffect);
 
             // apply the effects - this will also apply card skill effects if any
-            _gameLogic.ApplySkillForUI(target, skill);
+            _gameLogic.ApplySkillForUI(targets, skill);
 
             // later on add some extra logic like check if all cards action are played or something like that
             _endTurnPanel.SetNothingElseToDo();
 
             BlockDragAction = true;
+        }
+
+        public async void HandleLineSelected()
+        {
+            var targets = new List<SkillTargetData>(LineMouseOver.Cards.Count);
+            foreach(CardUI model in LineMouseOver.Cards)
+                targets.Add(new SkillTargetData(LineMouseOver.LineIndicator, model.SlotNumber));
+
+            CardSkill skill = DB[CardSelected.Id].Skill;
+            CardSelected = null;
+
+            await DisplayVisualEffects(targets, skill.VisualEffect);
+
+            _gameLogic.ApplySkillForUI(targets, skill);
+
+            BlockDragAction = true;
+
+            _endTurnPanel.SetNothingElseToDo();
         }
         #endregion
 
@@ -205,7 +227,7 @@ namespace Assets.Scripts
             }
 
             _statusPanel.gameObject.SetActive(true);
-            BlackBackground.SetActive(false);
+            _blackBackground.SetActive(false);
 
             if(ShowUIMode)
             {
@@ -290,17 +312,19 @@ namespace Assets.Scripts
             // AI wants me to move a card
             if (eventArgs.MessageType == GameLogicMessageType.MoveCard)
             {
+                MoveData move = eventArgs.LastMove;
+
 #if UNITY_EDITOR
-                if (eventArgs.LastMove == null)
+                if (move == null)
                     throw new System.ArgumentNullException("LastMove", "LastMove cannot be null in this context.");
 #endif
 
-                Debug.Log($"MoveData: fLine:{eventArgs.LastMove.FromLine.ToString()}" 
-                    + $" fSlot:{eventArgs.LastMove.FromSlotNumber}" 
-                    + $" tLine:{eventArgs.LastMove.TargetLine.ToString()}" 
-                    + $" tSlot:{eventArgs.LastMove.TargetSlotNumber}");
+                Debug.Log($"MoveData: fLine:{move.FromLine.ToString()}" 
+                    + $" fSlot:{move.FromSlotNumber}" 
+                    + $" tLine:{move.TargetLine.ToString()}" 
+                    + $" tSlot:{move.TargetSlotNumber}");
 
-                MoveCardOnUI(eventArgs.LastMove);
+                MoveCardOnUI(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
 
                 // TODO: add card move animation and return control after its over
             }
@@ -350,42 +374,8 @@ namespace Assets.Scripts
 
         void GameOver(int topStrength, int botStrength)
         {
-            BlackBackground.SetActive(true);
-            EndGamePanel.SetData(topStrength, botStrength);
-        }
-
-        void MoveCardOnUI(MoveData move)
-        {
-            #region Assertions
-#if UNITY_EDITOR
-            MoveCardAssertions(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
-#endif
-            #endregion
-
-            LineUI fLine = _lines[(int)move.FromLine];
-            LineUI tLine = _lines[(int)move.TargetLine];
-
-            Transform cardContainer = fLine.transform.GetChild(move.FromSlotNumber);
-            cardContainer.SetParent(tLine.transform);
-
-            CardUI card = cardContainer.transform.GetChild(0).GetComponent<CardUI>();
-            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
-            card.ParentLineUI = tLine;
-            card.SlotNumber = move.TargetSlotNumber;
-
-            // add to list and increase slot number on the right by one
-            if (tLine.Cards.Count == 0)
-                tLine.Cards.Add(card);
-            else
-                tLine.Cards.Insert(move.TargetSlotNumber, card);
-
-            tLine.Cards.GetLast(tLine.Cards.Count - move.TargetSlotNumber - 1).ToList()
-                .ForEach(c => c.SlotNumber++);
-
-            // remove from list and decrease slot number on the right by one
-            fLine.Cards.RemoveAt(move.FromSlotNumber);
-            fLine.Cards.GetLast(fLine.Cards.Count - move.FromSlotNumber).ToList()
-                .ForEach(c => c.SlotNumber--);
+            _blackBackground.SetActive(true);
+            _endGamePanel.SetData(topStrength, botStrength);
         }
 
         CardUI MoveCardOnUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
@@ -423,9 +413,9 @@ namespace Assets.Scripts
                 foreach (SkillTarget target in skill.Targets)
                     targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
 
-                VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
+                _vfxController.ScheduleParticleEffect(targets, skill.VisualEffect);
 
-                await VFXController.PlayScheduledParticleEffects();
+                await _vfxController.PlayScheduledParticleEffects();
             }
         }
 
@@ -436,9 +426,9 @@ namespace Assets.Scripts
             foreach (SkillTargetData target in targets)
                 targetCards.Add(_lines[(int)target.Line][target.SlotNumber]);
 
-            VFXController.ScheduleParticleEffect(targetCards, visualEffect);
+            _vfxController.ScheduleParticleEffect(targetCards, visualEffect);
 
-            await VFXController.PlayScheduledParticleEffects();
+            await _vfxController.PlayScheduledParticleEffects();
         }
 
         void ApplyStrengthChanges(List<List<int>> currentCardStrengths)

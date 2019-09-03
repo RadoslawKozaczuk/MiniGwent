@@ -19,12 +19,11 @@ namespace Assets.Scripts.UI
         public int Count => Cards.Count;
 
         public List<CardUI> Cards = new List<CardUI>();
-        public bool Outline = false;
         public LineIndicator LineIndicator;
         public PlayerIndicator PlayerIndicator;
         public int TargetSlotPositionNumber;
 
-        OutlineController _outline;
+        [SerializeField] OutlineController _outline;
         GameObject _targetSlotIndicator;
         GridLayoutGroup _gridLayoutGroup;
         bool _isMouseOver;
@@ -32,12 +31,8 @@ namespace Assets.Scripts.UI
         #region Unity life-cycle methods
         void Awake()
         {
-            if(Outline)
-                _outline = GetComponent<OutlineController>();
-
             _gridLayoutGroup = GetComponent<GridLayoutGroup>();
         }
-
 
         void Update()
         {
@@ -55,16 +50,16 @@ namespace Assets.Scripts.UI
         #region Interfaces Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            MainUIController.MouseHoveringOverAllyLine = PlayerIndicator == PlayerIndicator.Bot;
-            MainUIController.MouseHoveringOverEnemyLine 
-                = PlayerIndicator == PlayerIndicator.Top && LineIndicator != LineIndicator.TopDeck;
+            MainUIController.MouseHoveringOverPopulatedAllyLine = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverPopulatedEnemyLine = PlayerIndicator == PlayerIndicator.Top 
+                && LineIndicator != LineIndicator.TopDeck
+                && Cards.Count > 0;
 
+            MainUIController.LineMouseOver = this;
             _isMouseOver = true;
 
             CardUI card = MainUIController.CardBeingDraged;
-            if (card != null
-                && card.ParentLineUI != this
-                && card.PlayerIndicator == PlayerIndicator)
+            if (card != null && card.ParentLineUI != this && card.PlayerIndicator == PlayerIndicator) // on drag
             {
                 _outline.TurnPulsationOn();
 
@@ -73,19 +68,22 @@ namespace Assets.Scripts.UI
 
                 RecalculateSpacing();
             }
+            else if((MainUIController.AllyLineSelectMode && MainUIController.MouseHoveringOverPopulatedAllyLine)
+                || (MainUIController.EnemyLineSelectMode && MainUIController.MouseHoveringOverPopulatedEnemyLine))
+                _outline.TurnPulsationOn(true);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            MainUIController.MouseHoveringOverAllyLine = false;
-            MainUIController.MouseHoveringOverEnemyLine = false;
+            MainUIController.MouseHoveringOverPopulatedAllyLine = false;
+            MainUIController.MouseHoveringOverPopulatedEnemyLine = false;
 
+            MainUIController.LineMouseOver = null;
             _isMouseOver = false;
 
             DestroyTargetSlotIndicator();
 
-            if (Outline)
-                _outline.TurnPulsationOff();
+            _outline.TurnPulsationOff();
         }
         #endregion
 

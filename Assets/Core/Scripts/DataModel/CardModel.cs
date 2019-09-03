@@ -4,8 +4,9 @@
     {
         public readonly PlayerIndicator PlayerIndicator;
         public readonly int DefaultStrength;
+        public readonly int CardId;
 
-        public int CardId;
+        public LineIndicator CurrentLine;
         public int CurrentStrength;
         public int SlotNumber;
 
@@ -18,16 +19,9 @@
             CurrentStrength = DefaultStrength;
         }
 
-        //public override string ToString() 
-        //    => Utils.CountDigit(CardId) <= 1 
-        //        ? $"[0{CardId}]" 
-        //        : $"[{CardId}]";
+        public override string ToString() => $"[{(int)CurrentLine},{SlotNumber}]";
 
-
-        public override string ToString() => $"[t{CardId} s{SlotNumber}]";
-
-        //public override string ToString() => $"[{CardId}/{CurrentStrengthStr()}/{DefaultStrength}]";
-
+        public string ToStringIdStrDefstr() => $"[{CardId}/{CurrentStrengthStr()}/{DefaultStrength}]";
 
         string CurrentStrengthStr() 
             => CurrentStrength < DefaultStrength

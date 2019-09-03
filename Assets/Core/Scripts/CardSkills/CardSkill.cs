@@ -21,6 +21,11 @@ namespace Assets.Core.CardSkills
 
             if (effect == null)
                 throw new ArgumentNullException("effect", "Effect parameter cannot be null.");
+
+            if (executionTime == SkillExecutionTime.OnDeployManual && targets.Count > 1)
+                throw new ArgumentException(
+                    "In this version of the game skill marked as OnDeployManual can only have one target type. Sorry.", 
+                    "targets");
 #endif
 
             ExecutionTime = executionTime;

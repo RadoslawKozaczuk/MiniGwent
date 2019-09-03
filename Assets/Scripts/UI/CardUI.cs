@@ -68,9 +68,9 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            MainUIController.MouseHoveringOverAllyLine = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverPopulatedAllyLine = PlayerIndicator == PlayerIndicator.Bot;
             MainUIController.MouseHoveringOverAllyUnit = PlayerIndicator == PlayerIndicator.Bot;
-            MainUIController.MouseHoveringOverEnemyLine 
+            MainUIController.MouseHoveringOverPopulatedEnemyLine 
                 = PlayerIndicator == PlayerIndicator.Top && ParentLineUI.LineIndicator != LineIndicator.TopDeck;
             MainUIController.MouseHoveringOverEnemyUnit
                 = PlayerIndicator == PlayerIndicator.Top && !Hidden;
@@ -80,7 +80,7 @@ namespace Assets.Scripts
             // if nothing is being dragged
             if (!MainUIController.CardBeingDraged && !_hidden)
             {
-                _outlineController.TurnPulsationOn();
+                _outlineController.TurnPulsationOn(MainUIController.SingleTargetSelectMode && MainUIController.MouseHoveringOverEnemyUnit);
                 MainUIController.Instance.CardInfoPanel.gameObject.SetActive(true);
                 MainUIController.Instance.CardInfoPanel.SetInfoForCard(this);
             }
@@ -88,9 +88,9 @@ namespace Assets.Scripts
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            MainUIController.MouseHoveringOverAllyLine = false;
+            MainUIController.MouseHoveringOverPopulatedAllyLine = false;
             MainUIController.MouseHoveringOverAllyUnit = false;
-            MainUIController.MouseHoveringOverEnemyLine = false;
+            MainUIController.MouseHoveringOverPopulatedEnemyLine = false;
             MainUIController.MouseHoveringOverEnemyUnit = false;
 
             MainUIController.CardMouseOver = null;
@@ -101,7 +101,7 @@ namespace Assets.Scripts
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (!Draggable || MainUIController.BlockDragAction || MainUIController.TargetSelectMode)
+            if (!Draggable || MainUIController.BlockDragAction || MainUIController.SingleTargetSelectMode)
                 return;
 
             _preDragLocation = transform.parent;
@@ -114,7 +114,7 @@ namespace Assets.Scripts
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (!Draggable || MainUIController.BlockDragAction || MainUIController.TargetSelectMode)
+            if (!Draggable || MainUIController.BlockDragAction || MainUIController.SingleTargetSelectMode)
                 return;
 
             transform.localPosition = MainUIController.Instance.SecondaryCanvas.ScreenToCanvasPosition(Input.mousePosition);
@@ -122,7 +122,7 @@ namespace Assets.Scripts
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!Draggable || MainUIController.BlockDragAction || MainUIController.TargetSelectMode)
+            if (!Draggable || MainUIController.BlockDragAction || MainUIController.SingleTargetSelectMode)
                 return;
 
             LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();

@@ -6,7 +6,7 @@ namespace Assets.Scripts.Interfaces
     {
         void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber);
 
-        void HandleTargetSelected();
+        void HandleSingleTargetSelected();
         
         void HandleEndTurnAction();
     }

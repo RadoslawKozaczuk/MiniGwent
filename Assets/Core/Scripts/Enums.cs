@@ -14,13 +14,13 @@
 
     public enum GameLogicMessageType { MoveCard, PlaySkillVFX, UpdateStrength, EndTurn, GameOver }
 
-    public enum SkillExecutionTime { OnDeployAutomatic, OnDeployManual, UponDeath }
+    public enum SkillExecutionTime { OnDeployAutomatic, OnDeployManual }
 
     public enum SkillTarget {
         // use together with OnDeployAutomatic and UponDeath
         RightNeighbor, LeftNeighbor, BothNeighbors, AllInLineExceptMe, CorrespondingEnemyLine,
         // use together with OnDeployManual
-        SingleEnemy, EnemyLine
+        SingleEnemy, EnemyLine, AllyLine
     }
 
     public enum SkillVisualEffect { GreenCloud, Heal, FireBall }

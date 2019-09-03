@@ -6,10 +6,9 @@ namespace Assets.Scripts
     [RequireComponent(typeof(Outline))]
     public class OutlineController : MonoBehaviour
     {
-        static Color _cyanColor = new Color(0, 255, 235, 100); // cyan color
-        static Color _redColor = new Color(255, 0, 0, 100); // cyan color
+        static Color _cyanColor = new Color(0, 255, 235, 100);
+        static Color _orange = new Color(255, 190, 0, 255);
 
-        public bool ForcedPulsation;
         public bool BigPulsation;
 
         [SerializeField] Outline _outline;
@@ -21,17 +20,17 @@ namespace Assets.Scripts
 
         void Update()
         {
-            if (ForcedPulsation || _pulsation)
+            if (_pulsation)
                 _outline.effectDistance = BigPulsation ? BigSinus() : SmallSinus();
         }
         #endregion
 
-        public void TurnPulsationOn()
+        /// <summary>
+        /// Turns pulsation on. Cyan by default. Can be red if necessary.
+        /// </summary>
+        public void TurnPulsationOn(bool orange = false)
         {
-            _outline.effectColor = MainUIController.TargetSelectMode && !MainUIController.MouseHoveringOverAllyLine
-                ? _redColor 
-                : _cyanColor;
-
+            _outline.effectColor = orange ? _orange : _cyanColor;
             _pulsation = true;
         }
 
@@ -42,21 +41,21 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// Returns values from 3 to 5 with period equal to 1.57s
+        /// Returns values from 4 to 6 with period equal to 1.57s
         /// </summary>
         Vector2 BigSinus()
         {
             // multiplied by 4 for more frequent pulses
-            float value = Mathf.Sin(Time.time * 4) + 4f; // from 3 to 5
+            float value = Mathf.Sin(Time.time * 4) + 5f; // from 4 to 6
             return new Vector2(value, value);
         }
 
         /// <summary>
-        /// Returns values from 0 to 2 with period equal to 1.57s
+        /// Returns values from 1 to 3 with period equal to 1.57s
         /// </summary>
         Vector2 SmallSinus()
         {
-            float value = Mathf.Sin(Time.time * 4) + 1f; // from 0 to 2
+            float value = Mathf.Sin(Time.time * 4) + 2f; // from 1 to 3
             return new Vector2(value, value);
         }
     }
