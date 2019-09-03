@@ -14,6 +14,9 @@ namespace Assets.Scripts
     {
         public static MainUIController Instance;
         public static readonly DummyDB DB = new DummyDB();
+        public static Sprite[] Icons;
+        public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
+        static public bool BlockDragAction;
 
         PlayerIndicator _currentPlayer;
         public PlayerIndicator CurrentPlayer
@@ -60,13 +63,7 @@ namespace Assets.Scripts
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
 
-        public static Sprite[] Icons;
-
-        public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
-
         LineUI[] _lines;
-
-        static public bool BlockDragAction;
 
         #region Unity life-cycle methods
         void Awake()
@@ -175,16 +172,14 @@ namespace Assets.Scripts
                 CreateUICardRepresentation(cardModel, player, hidden)));
         }
 
-        // this is some sort of a semi-constructor
-        // could be extracted out but that would require to have another class which I think is not worth it
+        // this is some sort of a constructor, could be extracted out for better encapsulation 
+        // but that would require to have another class which I think is not worth it
         CardUI CreateUICardRepresentation(CardModel cardModel, PlayerIndicator player, bool hidden)
         {
             GameObject card = Instantiate(CardPrefab, transform);
 
             CardUI ui = card.GetComponent<CardUI>();
             ui.Id = cardModel.CardId;
-            ui.mainCanvas = MainCanvas;
-            ui.secondaryCanvas = SecondaryCanvas;
             ui.Image.sprite = Icons[cardModel.CardId];
             ui.TitleText.text = DB[cardModel.CardId].Title;
 
@@ -199,6 +194,9 @@ namespace Assets.Scripts
             return ui;
         }
 
+        /// <summary>
+        /// This method handles whole communication with the AI.
+        /// </summary>
         async void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
             CurrentPlayer = eventArgs.CurrentPlayer;
@@ -208,7 +206,7 @@ namespace Assets.Scripts
             {
 #if UNITY_EDITOR
                 if (eventArgs.LastMove == null)
-                    throw new System.ArgumentNullException("LastMove", "LastMove cannot be null.");
+                    throw new System.ArgumentNullException("LastMove", "LastMove cannot be null in this context.");
 #endif
 
                 Debug.Log($"MoveData: fLine:{eventArgs.LastMove.FromLine.ToString()}" 
@@ -216,7 +214,10 @@ namespace Assets.Scripts
                     + $" tLine:{eventArgs.LastMove.TargetLine.ToString()}" 
                     + $" tSlot:{eventArgs.LastMove.TargetSlotNumber}");
 
-                MoveCardOnUI(eventArgs.LastMove);
+                MoveData move = eventArgs.LastMove;
+                MoveCardForAIV2(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
+                //CardUI movedCard = MoveCardOnUI(eventArgs.LastMove);
+                //movedCard.Initialize();
                 // TODO: add card move animation and return control after its over
 
                 // control return
@@ -225,11 +226,9 @@ namespace Assets.Scripts
                 _gameLogic.ReturnControl();
             }
 
-            // AI wants me to play some VFXs
+            // AI wants me to play VFXs
             else if(eventArgs.MessageType == GameLogicMessageType.PlaySkillVFX)
             {
-                CardSkill skill = eventArgs.Skill;
-
                 // play VFXs
                 await DisplayVisualEffects(eventArgs.Targets, eventArgs.VisualEffect);
 
@@ -238,17 +237,12 @@ namespace Assets.Scripts
                 _gameLogic.ReturnControl();
             }
 
-            // AI wants me to update strength
+            // AI wants me to update strengths
             else if(eventArgs.MessageType == GameLogicMessageType.UpdateStrength)
             {
-                // apply strength update to the UI
-                ApplyCurrentCardStrengthsChanges(eventArgs.CardStrengths);
-
-                // remove dead ones
+                ApplyStrengthChanges(eventArgs.CardStrengths);
                 RemoveDeadOnes();
 
-                // control return
-                Debug.Log("Return control after UpdateStrength msg handling");
                 _gameLogic.ReturnControl();
             }
 
@@ -297,6 +291,37 @@ namespace Assets.Scripts
             EndGamePanel.SetData(topStrength, botStrength);
         }
 
+        CardUI MoveCardForAIV2(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
+        {
+            #region Assertions
+#if UNITY_EDITOR
+            MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+#endif
+            #endregion
+
+            LineUI fLine = _lines[(int)fromLine];
+            LineUI tLine = _lines[(int)targetLine];
+
+            Transform cardContainer = fLine.transform.GetChild(fromSlotNumber);
+            cardContainer.SetParent(tLine.transform);
+
+            // add to list and increase slot number on the right by one
+            CardUI card = cardContainer.transform.GetChild(0).GetComponent<CardUI>();
+            card.Hidden = false;
+            tLine.Cards.Add(card);
+            tLine.Cards.GetLast(fLine.Cards.Count - targetSlotNumber - 1).ToList()
+                .ForEach(c => c.SlotNumber++);
+
+            // remove from list and decrease slot number on the right by one
+            fLine.Cards.RemoveAt(fromSlotNumber);
+            fLine.Cards.GetLast(fLine.Cards.Count - fromSlotNumber - 1).ToList()
+                .ForEach(c => c.SlotNumber--);
+
+            Debug.Log($"I just moved a card from {fromLine.ToString()},{fromSlotNumber} to {targetLine.ToString()},{targetSlotNumber}");
+
+            return card;
+        }
+
         CardUI MoveCardOnUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             #region Assertions
@@ -314,25 +339,9 @@ namespace Assets.Scripts
             fLine.RemoveFromLine(fromSlotNumber);
             tLine.InsertCard(card, targetSlotNumber);
 
+            Debug.Log($"I just moved a card from {fromLine.ToString()},{fromSlotNumber} to {targetLine.ToString()},{targetSlotNumber}");
+
             return card;
-        }
-
-        void MoveCardOnUI(MoveData move)
-        {
-            #region Assertions
-#if UNITY_EDITOR
-            MoveCardAssertions(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
-#endif
-            #endregion
-
-            LineUI fLine = _lines[(int)move.FromLine];
-            LineUI tLine = _lines[(int)move.TargetLine];
-
-            CardUI card = fLine[move.FromSlotNumber];
-            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
-
-            fLine.RemoveFromLine(move.FromSlotNumber);
-            tLine.InsertCard(card, move.TargetSlotNumber);
         }
 
         async Task DisplayVisualEffectsIfAny(CardUI movedCard, LineIndicator targetLine, int targetSlotNumber)
@@ -341,18 +350,18 @@ namespace Assets.Scripts
             CardSkill skill = DB[movedCard.Id].Skill;
 
             // if there are any skills to do, do them
-            if (skill != null)
+            if (skill == null)
+                return;
+
+            var targets = new List<CardUI>();
+            if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
             {
-                var targets = new List<CardUI>();
-                if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
-                {
-                    foreach (SkillTarget target in skill.Targets)
-                        targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
+                foreach (SkillTarget target in skill.Targets)
+                    targets.AddRange(ParseCardSkillTarget(targetLine, targetSlotNumber, target));
 
-                    VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
+                VFXController.ScheduleParticleEffect(targets, skill.VisualEffect);
 
-                    await VFXController.PlayScheduledParticleEffects();
-                }
+                await VFXController.PlayScheduledParticleEffects();
             }
         }
 
@@ -368,7 +377,7 @@ namespace Assets.Scripts
             await VFXController.PlayScheduledParticleEffects();
         }
 
-        void ApplyCurrentCardStrengthsChanges(List<List<int>> currentCardStrengths)
+        void ApplyStrengthChanges(List<List<int>> currentCardStrengths)
         {
             for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
             {

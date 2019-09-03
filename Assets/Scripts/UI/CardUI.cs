@@ -53,8 +53,6 @@ namespace Assets.Scripts
         /// </summary>
         public bool Draggable;
         public LineUI ParentLineUI;
-        public Canvas mainCanvas;
-        public Canvas secondaryCanvas;
 
         // this corresponds both to the sibling index int the hierarchy as well as the index in the table in GameLogic
         public int SlotNumber;
@@ -70,12 +68,14 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
+            Debug.Log($"OnPointerEnter: CardBeingDragged==null->{MainUIController.CardBeingDraged == null}, hidden==true->{_hidden==true}");
+
             // if nothing is being dragged
             if(!MainUIController.CardBeingDraged && !_hidden)
             {
                 _outlineController.TurnPulsationOn();
                 MainUIController.Instance.CardInfoPanel.gameObject.SetActive(true);
-                MainUIController.Instance.CardInfoPanel.LoadDataForId(Id);
+                MainUIController.Instance.CardInfoPanel.SetInfoForCard(this);
             }
         }
 
@@ -93,7 +93,7 @@ namespace Assets.Scripts
             _preDragLocation = transform.parent;
             
             // move to secondary canvas in order to be displayed always on top
-            transform.SetParent(secondaryCanvas.transform, true);
+            transform.SetParent(MainUIController.Instance.SecondaryCanvas.transform, true);
 
             MainUIController.CardBeingDraged = this;
         }
@@ -103,7 +103,7 @@ namespace Assets.Scripts
             if (!Draggable || MainUIController.BlockDragAction)
                 return;
 
-            transform.localPosition = secondaryCanvas.ScreenToCanvasPosition(Input.mousePosition);
+            transform.localPosition = MainUIController.Instance.SecondaryCanvas.ScreenToCanvasPosition(Input.mousePosition);
         }
 
         public void OnEndDrag(PointerEventData eventData)
@@ -136,5 +136,12 @@ namespace Assets.Scripts
             MainUIController.CardBeingDraged = null;
         }
         #endregion
+
+        public void Initialize()
+        {
+            GetComponent<Image>().enabled = true;
+            GetComponent<Outline>().enabled = true;
+            _outlineController.enabled = true;
+        }
     }
 }

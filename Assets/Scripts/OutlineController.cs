@@ -7,6 +7,7 @@ namespace Assets.Scripts
     public class OutlineController : MonoBehaviour
     {
         static Color _cyanColor = new Color(0, 255, 235, 100); // cyan color
+        static Color _redColor = new Color(255, 0, 0, 100); // cyan color
 
         public bool ForcedPulsation;
         public bool BigPulsation;

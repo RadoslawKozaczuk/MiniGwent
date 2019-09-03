@@ -53,6 +53,7 @@ namespace Assets.Scripts.UI
         #region Interfaces Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
+            //Debug.Log("LineUI OnPointerEnter call");
             _isMouseOver = true;
 
             CardUI card = MainUIController.CardBeingDraged;
@@ -101,7 +102,7 @@ namespace Assets.Scripts.UI
             child.SetParent(MainUIController.Instance.ObjectDump);
             Destroy(child.gameObject);
 
-            // all cards on the right must have their NumberInLine reduced by one
+            // all cards on the right must have their SlotNumber reduced by one
             var cardsOnTheRight = Cards.GetLast(Cards.Count - slotNumber - 1).ToList();
             cardsOnTheRight.ForEach(c => c.SlotNumber--);
 

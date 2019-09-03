@@ -1,8 +1,8 @@
-﻿using NUnit.Framework;
-using System.Collections.Generic;
-using Assets.Core;
-using System.Linq;
+﻿using Assets.Core;
+using NUnit.Framework;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Assets.Editor.CoreAssemblyTests
 {

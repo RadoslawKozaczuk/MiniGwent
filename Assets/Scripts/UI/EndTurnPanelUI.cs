@@ -30,6 +30,7 @@ namespace Assets.Scripts.UI
         readonly string _nothingElseToDo = "Nothing else to do... \n(Press space to end turn)";
         readonly string _aiIsThinking = "AI is thinking hard...";
         readonly string _yourTurn = "Your turn";
+        readonly string _selectTarget = "Select target";
 
         Color32 _color;
         bool _pulsating;
@@ -83,6 +84,17 @@ namespace Assets.Scripts.UI
             _endTurnButton.interactable = false;
             _pulsating = false;
             _infoText.gameObject.SetActive(false);
+        }
+
+        public void SetSelectTarget()
+        {
+            _color = _orange;
+
+            _endTurnButton.interactable = false;
+            _pulsating = true;
+            _infoText.gameObject.SetActive(true);
+
+            _infoText.text = _selectTarget;
         }
 
         public void EndTurnAction() => MainUIController.Instance.HandleEndTurnAction();

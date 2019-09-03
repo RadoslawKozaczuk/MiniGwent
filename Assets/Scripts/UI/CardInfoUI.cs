@@ -13,13 +13,24 @@ namespace Assets.Scripts.UI
         [SerializeField] TextMeshProUGUI _strength;
         [SerializeField] Image _portrait;
 
-        public void LoadDataForId(int id)
+        public void SetInfoForCard(CardUI card)
         {
-            CardData data = MainUIController.DB[id];
+            CardData data = MainUIController.DB[card.Id];
             _title.text = data.Title;
             _description.text = data.Description;
-            _strength.text = "STR: " + data.Strength;
-            _portrait.sprite = MainUIController.Icons[id];
+            _portrait.sprite = MainUIController.Icons[card.Id];
+
+            UpdateStrengthText(card.CurrentStrength, card.DefaultStrength);
+        }
+
+        void UpdateStrengthText(int currentStrength, int defaultStrength)
+        {
+            if (currentStrength < defaultStrength)
+                _strength.text = $"STR: <color=red>{currentStrength}</color>/{defaultStrength}";
+            else if (currentStrength == defaultStrength)
+                _strength.text = $"STR: {currentStrength}/{defaultStrength}";
+            else
+                _strength.text = $"STR: <color=green>{currentStrength}</color>/{defaultStrength}";
         }
     }
 }

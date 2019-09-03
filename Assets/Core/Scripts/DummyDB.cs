@@ -15,7 +15,7 @@ namespace Assets.Core
             // I added param names for readability (thx to that it looks more like JSON)
             new CardData(
                 title: "Stupid Dog",
-                description: "Is so stupid that it bites its own allies for now reason. "
+                description: "Is so stupid that it bites its own allies for no reason. "
                     + "When deployed bites an ally unit on the right inflicting 1 DMG.",
                 strength: 5
                 ,
@@ -42,7 +42,7 @@ namespace Assets.Core
                 strength: 5),
             new CardData(
                 title: "Elven Archer",
-                description: "On deploy he shot one enemy of choice for 3 DMG.",
+                description: "On deploy he shot one enemy of your choice inflicting 3 DMG.",
                 strength: 5),
                 //skill: new CardSkill(
                 //    executionTime: SkillExecutionTime.OnDeployManual,

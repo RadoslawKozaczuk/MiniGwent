@@ -26,23 +26,5 @@ namespace Assets.Core
             MessageType = type;
             CurrentPlayer = currentPlayer;
         }
-
-        //public GameLogicStatusChangedEventArgs(GameLogicMessageType type, string internalStatus, 
-        //    int topStrength, int botStrength)
-        //{
-        //    MessageType = type;
-        //    CurrentStatus = internalStatus;
-        //    OverallTopStrength = topStrength;
-        //    OverallBotStrength = botStrength;
-        //}
-
-        //public GameLogicStatusChangedEventArgs(string internalStatus, int topStrength, int botStrength, 
-        //    List<List<int>> currentCardStrengths)
-        //{
-        //    CurrentStatus = internalStatus;
-        //    OverallTopStrength = topStrength;
-        //    OverallBotStrength = botStrength;
-        //    CurrentCardStrengths = currentCardStrengths;
-        //}
     }
 }
