@@ -10,5 +10,7 @@
             Line = line;
             SlotNumber = slotNumber;
         }
+
+        public override string ToString() => $"[{(int)Line},{SlotNumber}]";
     }
 }

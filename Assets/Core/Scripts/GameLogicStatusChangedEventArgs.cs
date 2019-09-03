@@ -13,6 +13,7 @@ namespace Assets.Core
         public PlayerIndicator CurrentPlayer;
         public MoveData LastMove;
         public string CurrentStatus;
+        public string LastExecutedCommand;
         public int TopTotalStrength;
         public int BotTotalStrength;
         public List<List<int>> CardStrengths;

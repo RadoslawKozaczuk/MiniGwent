@@ -350,7 +350,10 @@ namespace Assets.Core
                     LastMove = move,
                     TopTotalStrength = TopTotalStrength,
                     BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus()
+                    CurrentStatus = GetCurrentStatus(),
+                    LastExecutedCommand = $"Player <b>{CurrentPlayer.ToString()}</b> moved card "
+                        + $"from {move.FromLine.ToString()} slot {move.FromSlotNumber}"
+                        + $"to {move.TargetLine.ToString()} slot {move.TargetSlotNumber}"
                 });
 
         internal void BroadcastPlaySkillVFX(List<SkillTargetData> targets, SkillVisualEffect visualEffect)
@@ -362,7 +365,9 @@ namespace Assets.Core
                     VisualEffect = visualEffect,
                     TopTotalStrength = TopTotalStrength,
                     BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus()
+                    CurrentStatus = GetCurrentStatus(),
+                    LastExecutedCommand = $"<b>{CurrentPlayer.ToString()}</b> Player's card interacted with following cards: "
+                        + string.Join(", ", targets)
                 });
 
         // early evaluation
