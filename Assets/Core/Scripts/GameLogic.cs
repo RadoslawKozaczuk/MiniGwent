@@ -19,7 +19,7 @@ namespace Assets.Core
         int TopTotalStrength => _topBackline.Sum(c => c.CurrentStrength) + _topFrontline.Sum(c => c.CurrentStrength);
         int BotTotalStrength => _botBackline.Sum(c => c.CurrentStrength) + _botFrontline.Sum(c => c.CurrentStrength);
 
-        internal PlayerIndicator CurrentPlayer = PlayerIndicator.Bot; // bot always starts the game whether it is a human or AI
+        internal PlayerIndicator CurrentPlayer = PlayerIndicator.Bot; // bot always starts the game whether it's a human or AI
         internal bool EndTurnMsgSent; // when true it indicates that next return control signal will start a new turn
 
         readonly List<CardModel> _topDeck = new List<CardModel>();
@@ -29,11 +29,12 @@ namespace Assets.Core
         readonly List<CardModel> _botBackline = new List<CardModel>();
         readonly List<CardModel> _botDeck = new List<CardModel>();
         readonly List<CardModel>[] _lines;
-        readonly AI _aiTop;
+        readonly AI _aiTop; // top player is always AI
         readonly AI _aiBot; // null when controlled by human
         readonly AI[] _aiReferences;
 
-        // top player is always AI
+        bool _gameOver;
+        
         public GameLogic(PlayerControl botControlType)
         {
             _lines = new List<CardModel>[6] { _topDeck, _topBackline, _topFrontline, _botFrontline, _botBackline, _botDeck };
@@ -46,67 +47,42 @@ namespace Assets.Core
         }
 
         /// <summary>
-        /// Starts new turn.
+        /// Data model is needed when UI is attached.
+        /// For safety reasons it returns a copy of the list.
         /// </summary>
+        public List<CardModel> SpawnRandomDeck(PlayerIndicator player, bool doNotSendCopy = false)
+        {
+            List<CardModel> targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
+            for (int i = 0; i < NUMBER_OF_CARDS_IN_DECK; i++)
+            {
+                int cardType = UnityEngine.Random.Range(0, DB.Length);
+                var card = new CardModel(cardType, player) { SlotNumber = i };
+                targetLine.Add(card);
+            }
+
+            BroadcastUpdateStrength_StatusUpdate();
+
+            if (doNotSendCopy)
+                return null;
+
+            return new List<CardModel>(targetLine); // encapsulation
+        }
+
         public void StartNextTurn()
         {
             CurrentPlayer = CurrentPlayer.Opposite();
             StartNextTurnInternal();
         }
 
-        internal List<CardModel> GetLine(PlayerIndicator player, PlayerLine line) 
-            => player == PlayerIndicator.Top 
-                ? _lines[(int)line] 
-                : _lines[5 - (int)line];
-
-        internal List<CardModel> GetLine(LineIndicator line) => _lines[(int)line];
-
-        internal LineIndicator GetLineIndicator(PlayerIndicator player, PlayerLine line)
-            => player == PlayerIndicator.Top
-                ? (LineIndicator)(int)line
-                : (LineIndicator)(5 - (int)line);
-
-        void StartNextTurnInternal()
-        {
-            EndTurnMsgSent = false;
-
-            //Debug.Log("Start of a new turn, the current player is: " + CurrentPlayer.ToString());
-
-            if (CurrentPlayer == PlayerIndicator.Top)
-            {
-                if (_topDeck.Count == 0)
-                {
-                    // AI has nothing else to do
-                    BroadcastGameOver_StatusUpdate(); // for now player always plays first so we can safely broadcast game over here
-                }
-                else
-                    _aiTop.StartAITurn();
-            }
-            else
-            {
-                if (_botDeck.Count == 0)
-                {
-                    // AI has nothing else to do
-                    BroadcastGameOver_StatusUpdate(); // for now player always plays first so we can safely broadcast game over here
-                }
-                else
-                    _aiBot.StartAITurn();
-            }
-        }
-
-        /// <summary>
-        ///  
-        /// </summary>
         public void ReturnControl()
         {
-            //Debug.Log($"return control - curretn player = {CurrentPlayer.ToString()}");
+            if (_gameOver) // game is over - ignore all upper logic calls
+                return;
 
             bool theOtherPlayerIsAI = _aiReferences[(int)CurrentPlayer] != null;
 
             if (EndTurnMsgSent && theOtherPlayerIsAI)
-            {
                 StartNextTurnInternal();
-            }
             else
             {
                 if (CurrentPlayer == PlayerIndicator.Top)
@@ -116,30 +92,32 @@ namespace Assets.Core
             }
         }
 
-        internal LineIndicator MapPlayerLine(PlayerIndicator player, PlayerLine line)
+        public void ApplySkillForUI(SkillTargetData target, CardSkill skill)
         {
-            if (player == PlayerIndicator.Top)
-                switch(line)
-                {
-                    case PlayerLine.Deck: return LineIndicator.TopDeck;
-                    case PlayerLine.Backline: return LineIndicator.TopBackline;
-                    case PlayerLine.Frontline: return LineIndicator.TopFrontline;
-                }
-            else if(player == PlayerIndicator.Bot)
-                switch (line)
-                {
-                    case PlayerLine.Deck: return LineIndicator.BotDeck;
-                    case PlayerLine.Backline: return LineIndicator.BotBackline;
-                    case PlayerLine.Frontline: return LineIndicator.BotFrontline;
-                }
+#if UNITY_EDITOR
+            if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
+                throw new ArgumentException("skill", "this method should be used only for manually resolved skills");
+#endif
 
-            throw new Exception("Unreachable code reached! "
-                + "PlayerIndicator or PlayerLine enumerator must have been extended without extending the MapPlayerLine function.");
+            // parse target to model
+            CardModel model = _lines[(int)target.Line][target.SlotNumber];
+            skill.Effect(model); // apply the skill
+
+            // it's important to evaluate strengths before RemoveDeadOnes is called
+            // as we want our data match the upper logic's data 
+            // UI removes its elements later on
+            List<List<int>> cardStrengths = GetCardStrengths();
+
+            // remove dead ones
+            RemoveDeadOnes();
+
+            // inform upper logic about new strengths
+            BroadcastUpdateStrength_StatusUpdate(cardStrengths);
         }
 
         public void MoveCardForUI(
-            LineIndicator fromLine, int fromSlotNumber, 
-            LineIndicator targetLine, int targetSlotNumber, 
+            LineIndicator fromLine, int fromSlotNumber,
+            LineIndicator targetLine, int targetSlotNumber,
             bool applySkill = true)
         {
             #region Assertions
@@ -184,30 +162,40 @@ namespace Assets.Core
             }
         }
 
-        public void ApplySkillForUI(SkillTargetData target, CardSkill skill)
+        internal List<CardModel> GetLine(PlayerIndicator player, PlayerLine line) 
+            => player == PlayerIndicator.Top 
+                ? _lines[(int)line] 
+                : _lines[5 - (int)line];
+
+        internal List<CardModel> GetLine(LineIndicator line) => _lines[(int)line];
+
+        internal LineIndicator GetLineIndicator(PlayerIndicator player, PlayerLine line)
+            => player == PlayerIndicator.Top
+                ? (LineIndicator)(int)line
+                : (LineIndicator)(5 - (int)line);
+
+        internal LineIndicator MapPlayerLine(PlayerIndicator player, PlayerLine line)
         {
-#if UNITY_EDITOR
-            if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
-                throw new ArgumentException("skill", "this method should be used only for manually resolved skills");
-#endif
+            if (player == PlayerIndicator.Top)
+                switch(line)
+                {
+                    case PlayerLine.Deck: return LineIndicator.TopDeck;
+                    case PlayerLine.Backline: return LineIndicator.TopBackline;
+                    case PlayerLine.Frontline: return LineIndicator.TopFrontline;
+                }
+            else if(player == PlayerIndicator.Bot)
+                switch (line)
+                {
+                    case PlayerLine.Deck: return LineIndicator.BotDeck;
+                    case PlayerLine.Backline: return LineIndicator.BotBackline;
+                    case PlayerLine.Frontline: return LineIndicator.BotFrontline;
+                }
 
-            // parse target to model
-            CardModel model = _lines[(int)target.Line][target.SlotNumber];
-            skill.Effect(model); // apply the skill
-
-            // it's important to evaluate strengths before RemoveDeadOnes is called
-            // as we want our data match the upper logic's data 
-            // UI removes its elements later on
-            List<List<int>> cardStrengths = GetCardStrengths();
-
-            // remove dead ones
-            RemoveDeadOnes();
-
-            // inform upper logic about new strengths
-            BroadcastUpdateStrength_StatusUpdate(cardStrengths);
+            throw new Exception("Unreachable code reached! "
+                + "PlayerIndicator or PlayerLine enumerator must have been extended without extending the MapPlayerLine function.");
         }
 
-        public void MoveCardForAI(PlayerIndicator player, MoveData moveData)
+        internal void MoveCardForAI(PlayerIndicator player, MoveData moveData)
         {
             LineIndicator fromLine = moveData.FromLine;
             int fromSlotNumber = moveData.FromSlotNumber;
@@ -238,34 +226,6 @@ namespace Assets.Core
                 tLine.Insert(targetSlotNumber, card);
 
             BroadcastCardMove_LogUpdate(player, moveData);
-        }
-
-        void RemoveDeadOnes()
-        {
-            for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
-            {
-                List<CardModel> line = _lines[i];
-                for (int j = 0; j < line.Count; j++)
-                    if (line[j].CurrentStrength <= 0)
-                        line.RemoveAt(j--);
-            }
-        }
-
-        void ApplySkillEffectIfAny(CardModel card, LineIndicator deployLine, int slotNumber)
-        {
-            CardSkill skill = DB[card.CardId].Skill;
-            if (skill != null)
-            {
-                var targets = new List<CardModel>();
-
-                foreach (SkillTarget target in skill.Targets)
-                    targets.AddRange(ParseOnDeployAutomaticSkillTarget(deployLine, slotNumber, target));
-
-                foreach (CardModel target in targets)
-                    skill.Effect(target);
-
-                BroadcastSkillEffect_LogUpdate(CurrentPlayer, targets, skill);
-            }
         }
 
         internal List<CardModel> ParseOnDeployAutomaticSkillTarget(LineIndicator line, int slotNumber, SkillTarget target)
@@ -309,25 +269,52 @@ namespace Assets.Core
             BroadcastSkillEffect_LogUpdate(CurrentPlayer, new List<CardModel>(1) { card }, skill);
         }
 
-        /// <summary>
-        /// For safety reasons it returns a copy of the list.
-        /// </summary>
-        public List<CardModel> SpawnRandomDeck(PlayerIndicator player, bool doNotSendCopy = false)
+        void StartNextTurnInternal()
         {
-            List<CardModel> targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
-            for (int i = 0; i < NUMBER_OF_CARDS_IN_DECK; i++)
+            EndTurnMsgSent = false;
+
+            if (CurrentPlayer == PlayerIndicator.Top)
             {
-                int cardType = UnityEngine.Random.Range(0, DB.Length);
-                var card = new CardModel(cardType, player) { SlotNumber = i };
-                targetLine.Add(card);
+                if (_topDeck.Count == 0)
+                    BroadcastGameOver_StatusUpdate();
+                else
+                    _aiTop.StartAITurn();
             }
+            else
+            {
+                if (_botDeck.Count == 0)
+                    BroadcastGameOver_StatusUpdate();
+                else
+                    _aiBot.StartAITurn();
+            }
+        }
 
-            BroadcastUpdateStrength_StatusUpdate();
+        void RemoveDeadOnes()
+        {
+            for (int i = 1; i < _lines.Count() - 1; i++) // we omit top and bot decks
+            {
+                List<CardModel> line = _lines[i];
+                for (int j = 0; j < line.Count; j++)
+                    if (line[j].CurrentStrength <= 0)
+                        line.RemoveAt(j--);
+            }
+        }
 
-            if (doNotSendCopy)
-                return null;
+        void ApplySkillEffectIfAny(CardModel card, LineIndicator deployLine, int slotNumber)
+        {
+            CardSkill skill = DB[card.CardId].Skill;
+            if (skill != null)
+            {
+                var targets = new List<CardModel>();
 
-            return new List<CardModel>(targetLine); // encapsulation
+                foreach (SkillTarget target in skill.Targets)
+                    targets.AddRange(ParseOnDeployAutomaticSkillTarget(deployLine, slotNumber, target));
+
+                foreach (CardModel target in targets)
+                    skill.Effect(target);
+
+                BroadcastSkillEffect_LogUpdate(CurrentPlayer, targets, skill);
+            }
         }
 
         string GetCurrentStatus()
@@ -345,7 +332,7 @@ namespace Assets.Core
             return sb.ToString();
         }
 
-        public List<List<int>> GetCardStrengths()
+        List<List<int>> GetCardStrengths()
         {
             var currentStrengths = new List<List<int>>(4); // size of 4 because we don't need to send decks
             for (int i = 1; i < _lines.Length - 1; i++)
@@ -440,6 +427,8 @@ namespace Assets.Core
 
         internal void BroadcastGameOver_StatusUpdate()
         {
+            _gameOver = true; // aster this moment all return calls will be ignored
+
             if (GameLogicStatusChangedEventHandler == null)
                 ReturnControl(); // interface not attached - immediately return control
             else
@@ -461,9 +450,9 @@ namespace Assets.Core
 
             string cardTitle = DB[move.Card.CardId].Title;
             string lastExecutedCommand = 
-                $"Player <color=yellow><b>{player.ToString()}</b></color> moved card <color=yellow><b>{cardTitle}</b></color> "
-                + $"from {move.FromLine.ToString()} slot {move.FromSlotNumber} "
-                + $"to {move.TargetLine.ToString()} slot {move.TargetSlotNumber}";
+                $"<b>Player {player.ToString()}</b> moved card <color=yellow>{cardTitle}</color> "
+                + $"from <b>{move.FromLine.ToString()}</b> slot <b>{move.FromSlotNumber}</b> "
+                + $"to <b>{move.TargetLine.ToString()}</b> slot <b>{move.TargetSlotNumber}</b>";
 
             GameLogicLogUpdateEventHandler?.Invoke(
                 this,
@@ -482,25 +471,21 @@ namespace Assets.Core
                 return;
 
             // a bit of a hack
-            CardModel cardDummy = new CardModel(0, PlayerIndicator.Bot);
-            skill.Effect(cardDummy);
-
-            // true - heals, false - damages
-            bool heals = cardDummy.CurrentStrength > cardDummy.DefaultStrength;
+            CardModel dummy = new CardModel(0, PlayerIndicator.Bot);
+            skill.Effect(dummy); // see what this spell does to a dummy
+            bool heals = dummy.CurrentStrength > dummy.DefaultStrength; // true - heals, false - damages
+            int howPowerful = Math.Abs(dummy.DefaultStrength - dummy.CurrentStrength);
 
             string cardTitle = "ToBeDetermined";
-            string lastExecutedCommand;
+            string lastExecutedCommand = $"<b>{CurrentPlayer.ToString()} Player's</b> card ";
             if (targets.Count == 1)
-            {
-                int howPowerful = Math.Abs(cardDummy.DefaultStrength - cardDummy.CurrentStrength);
-                lastExecutedCommand = $"<color=yellow><b>{CurrentPlayer.ToString()}</b></color> Player's card <b>{cardTitle}</b> "
-                    + $"{HealsOrDamages()} enemy's {DB[targets[0].CardId].Title} for {howPowerful} damage";
-            }
+                lastExecutedCommand = $"<color=yellow>{cardTitle}</color> {HealsOrDamages()} "
+                    + $"<color=yellow>{DB[targets[0].CardId].Title}</color> for {howPowerful} point(s)";
             else // many targets
-                lastExecutedCommand = $"<b>{CurrentPlayer.ToString()}</b> Player's card <color=yellow><b>{cardTitle}</b></color> "
+                lastExecutedCommand = $" <color=yellow>{cardTitle}</color> "
                     + $"{HealsOrDamages()} following cards: " + string.Join(", ", targets);
 
-            string HealsOrDamages() => heals ? "<color=green><b>heals</b></color>" : "<color=red>damages</b></color>";
+            string HealsOrDamages() => heals ? "<color=green>heals</color>" : "<color=red>damages</color>";
 
             GameLogicLogUpdateEventHandler?.Invoke(
                 this,

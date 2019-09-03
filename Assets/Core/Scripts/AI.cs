@@ -208,7 +208,6 @@ namespace Assets.Core
 
         void EndTurn()
         {
-            Debug.Log($"AI {MyIndicatorToStr} invoked EndTurn action");
             _gameLogic.EndTurnMsgSent = true; // indicates that AI is done
             _gameLogic.BroadcastEndTurn_StatusUpdate();
         }

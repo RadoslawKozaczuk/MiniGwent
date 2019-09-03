@@ -51,14 +51,33 @@ namespace Assets.Core
                     visualEffect: SkillVisualEffect.GreenCloud)),
             new CardData(
                 title: "Tree of Eternity",
-                description: "Heals allies on left and right. "
-                    + "When deployed increases strength of nearby allies by 1.",
-                strength: 5
-                ,
+                description: "Heals allies on left and right. When deployed increases strength of nearby allies by 1.",
+                strength: 5,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployAutomatic,
                     targets: new List<SkillTarget> { SkillTarget.BothNeighbors },
                     effect: card => card.CurrentStrength++,
+                    visualEffect: SkillVisualEffect.Heal)
+                ),
+            new CardData(
+                title: "Troll",
+                description: "When deployed he troll ally unit on the left side inflicting 1 DMG. "
+                    + "But that's not all he also trolls the whole enemy corresponding line inflicting 1 DMG to every unit.",
+                strength: 5,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployAutomatic,
+                    targets: new List<SkillTarget> { SkillTarget.LeftNeighbor, SkillTarget.CorrespondingEnemyLine },
+                    effect: card => card.CurrentStrength--,
+                    visualEffect: SkillVisualEffect.GreenCloud)
+                ),
+            new CardData(
+                title: "Unicorn",
+                description: "When deployed heal ally on the left side by 3.",
+                strength: 5,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployAutomatic,
+                    targets: new List<SkillTarget> { SkillTarget.LeftNeighbor },
+                    effect: card => card.CurrentStrength += 3,
                     visualEffect: SkillVisualEffect.Heal)
                 ),
         };

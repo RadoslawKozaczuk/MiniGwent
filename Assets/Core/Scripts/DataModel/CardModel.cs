@@ -24,7 +24,9 @@
         //        : $"[{CardId}]";
 
 
-        public override string ToString() => $"[{CardId}/{CurrentStrengthStr()}/{DefaultStrength}]";
+        public override string ToString() => $"[t{CardId} s{SlotNumber}]";
+
+        //public override string ToString() => $"[{CardId}/{CurrentStrengthStr()}/{DefaultStrength}]";
 
 
         string CurrentStrengthStr() 

@@ -65,8 +65,8 @@ namespace Assets.Scripts
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
 
-        public static bool GlobalTargetSelectMode;
-        public static bool GlobalShowUIMode;
+        public static bool TargetSelectMode;
+        public static bool ShowUIMode;
 
         LineUI[] _lines;
 
@@ -86,7 +86,7 @@ namespace Assets.Scripts
                 HandleEndTurnAction();
             else if(Input.GetMouseButtonDown(0))
             {
-                if(GlobalTargetSelectMode && CardMouseOver) // I need targets
+                if(TargetSelectMode && CardMouseOver) // I need targets
                 {
                     // target selected
                     HandleTargetSelected();
@@ -95,8 +95,81 @@ namespace Assets.Scripts
         }
         #endregion
 
-        async void HandleTargetSelected()
+        #region Interface Implementation
+        public async void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
+            #region Assertions
+#if UNITY_EDITOR
+            MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+#endif
+            #endregion
+
+            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+
+            // do I need a target or not
+            CardSkill skill = DB[movedCard.Id].Skill;
+
+            if (skill == null)
+            {
+                // apply the effects - this will also apply card skill effects if any
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+
+                // later on add some extra logic like check if all cards action are played or something like that
+                _endTurnPanel.SetNothingElseToDo();
+
+                BlockDragAction = true;
+            }
+            // targets can be autoresolved
+            else if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
+            {
+                await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
+
+                // apply the effects - this will also apply card skill effects if any
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+
+                // later on add some extra logic like check if all cards action are played or something like that
+                _endTurnPanel.SetNothingElseToDo();
+
+                BlockDragAction = true;
+            }
+            else if (skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
+            {
+                // check if any possible targets
+                if (_topBackline.Count > 0 || _topFrontline.Count > 0)
+                {
+                    // waiting for user response
+                    _endTurnPanel.SetSelectTarget();
+                    TargetSelectMode = true;
+
+                    CardSelected = _lines[(int)targetLine][targetSlotNumber];
+
+                    // just deployed card need to be constantly outlined (without pulsation)
+                    // any enemy card need to highlighted with red pulsation instead of blue
+                }
+                else
+                {
+                    _endTurnPanel.SetNothingElseToDo();
+                }
+
+                // apply the effects - this will NOT apply the card skill effects
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
+            }
+        }
+
+        public void HandleEndTurnAction()
+        {
+            CurrentPlayer = CurrentPlayer.Opposite();
+
+            _endTurnPanel.SetAiThinking();
+            _gameLogic.StartNextTurn();
+
+            BlockDragAction = true;
+        }
+
+        public async void HandleTargetSelected()
+        {
+            TargetSelectMode = false;
+
             var target = new SkillTargetData(CardMouseOver.ParentLineUI.LineIndicator, CardMouseOver.SlotNumber);
             CardSkill skill = DB[CardSelected.Id].Skill;
             CardSelected = null;
@@ -111,79 +184,6 @@ namespace Assets.Scripts
 
             BlockDragAction = true;
         }
-
-        #region Interface Implementation
-        public void HandleEndTurnAction()
-        {
-            CurrentPlayer = CurrentPlayer.Opposite();
-
-            _endTurnPanel.SetAiThinking();
-            _gameLogic.StartNextTurn();
-
-            BlockDragAction = true;
-        }
-
-        public async void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
-        {
-            #region Assertions
-#if UNITY_EDITOR
-            MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-#endif
-            #endregion
-
-            CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-
-            // do I need target or not
-            CardSkill skill = DB[movedCard.Id].Skill;
-
-            if(skill == null)
-            {
-                // apply the effects - this will also apply card skill effects if any
-                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-
-                // later on add some extra logic like check if all cards action are played or something like that
-                _endTurnPanel.SetNothingElseToDo();
-
-                BlockDragAction = true;
-            }
-            // targets can be autoresolved
-            else if(skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
-            {
-                await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
-
-                // apply the effects - this will also apply card skill effects if any
-                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
-
-                // later on add some extra logic like check if all cards action are played or something like that
-                _endTurnPanel.SetNothingElseToDo();
-
-                BlockDragAction = true;
-            }
-            else if(skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
-            {
-                // check if any possible targets
-                if(_topBackline.Count > 0 || _topFrontline.Count > 0)
-                {
-                    // waiting for user response
-                    _endTurnPanel.SetSelectTarget();
-                    GlobalTargetSelectMode = true;
-
-                    CardSelected = _lines[(int)targetLine][targetSlotNumber];
-
-                    
-
-                    // just deployed card need to be constantly outlined (without pulsation)
-                    // any enemy card need to highlighted with red pulsation instead of blue
-                }
-                else
-                {
-                    _endTurnPanel.SetNothingElseToDo();
-                }
-
-                // apply the effects - this will NOT apply the card skill effects
-                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
-            }
-        }
         #endregion
 
         public void StartGame(PlayerControl botControl, bool showUI)
@@ -191,9 +191,9 @@ namespace Assets.Scripts
             _gameLogic = new GameLogic(botControl);
 
             _botPlayerControl = botControl;
-            GlobalShowUIMode = showUI;
+            ShowUIMode = showUI;
 
-            if(GlobalShowUIMode)
+            if(ShowUIMode)
             {
                 _linesGroup.gameObject.SetActive(true);
                 _endTurnPanel.gameObject.SetActive(true);
@@ -206,7 +206,7 @@ namespace Assets.Scripts
             _statusPanel.gameObject.SetActive(true);
             BlackBackground.SetActive(false);
 
-            if(GlobalShowUIMode)
+            if(ShowUIMode)
             {
                 // if both players are AI both decs are visible
                 SpawnDeck(PlayerIndicator.Top, hidden: _botPlayerControl == PlayerControl.Human);
@@ -253,7 +253,7 @@ namespace Assets.Scripts
             List<CardModel> cards = _gameLogic.SpawnRandomDeck(player);
             LineUI targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
 
-            cards.ForEach(cardModel => targetLine.InsertCard(
+            cards.ForEach(cardModel => targetLine.AddCard(
                 CreateUICardRepresentation(cardModel, player, hidden)));
         }
 
@@ -280,16 +280,10 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// This method handles whole communication with the AI.
+        /// This method handles whole communication with GameLogic.
         /// </summary>
         async void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
-            if (!GlobalShowUIMode)
-            {
-                _gameLogic.ReturnControl(); // interface disabled - return control immediately
-                return;
-            }
-
             CurrentPlayer = eventArgs.CurrentPlayer;
 
             // AI wants me to move a card
@@ -306,32 +300,19 @@ namespace Assets.Scripts
                     + $" tSlot:{eventArgs.LastMove.TargetSlotNumber}");
 
                 MoveCardOnUI(eventArgs.LastMove);
+
                 // TODO: add card move animation and return control after its over
-
-                // control return
-
-                Debug.Log("Return control after MoveCard msg handling");
-                _gameLogic.ReturnControl();
             }
 
             // AI wants me to play VFXs
             else if(eventArgs.MessageType == GameLogicMessageType.PlaySkillVFX)
-            {
-                // play VFXs
                 await DisplayVisualEffects(eventArgs.Targets, eventArgs.VisualEffect);
-
-                // control return
-                //Debug.Log("Return control after PlaySkillVFX msg handling");
-                _gameLogic.ReturnControl();
-            }
 
             // AI wants me to update strengths
             else if(eventArgs.MessageType == GameLogicMessageType.UpdateStrength)
             {
                 ApplyStrengthChanges(eventArgs.CardStrengths);
                 RemoveDeadOnes();
-
-                _gameLogic.ReturnControl();
             }
 
             // AI informs me that its turn has ended
@@ -340,9 +321,7 @@ namespace Assets.Scripts
                 if (_botPlayerControl == PlayerControl.Human)
                 {
                     if (_botDeck.Count == 0) // nothing else to play
-                    {
                         GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
-                    }
                     else
                     {
                         _endTurnPanel.SetYourTurn();
@@ -352,25 +331,20 @@ namespace Assets.Scripts
                 else
                 {
                     if (_botDeck.Count == 0) // nothing else to play
-                    {
                         GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
-                    }
                     else
                     {
                         _endTurnPanel.SetYourTurn();
                         BlockDragAction = false;
-                        // control return
-                        Debug.Log("Return control after EndTurn msg handling");
-                        _gameLogic.ReturnControl();
                     }
                 }
             }
 
             // AI informs me that the game is over
             else if(eventArgs.MessageType == GameLogicMessageType.GameOver)
-            {
                 GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
-            }
+
+            _gameLogic.ReturnControl();
         }
 
         void GameOver(int topStrength, int botStrength)
@@ -399,7 +373,7 @@ namespace Assets.Scripts
             card.SlotNumber = move.TargetSlotNumber;
 
             // add to list and increase slot number on the right by one
-            if (move.TargetSlotNumber == tLine.Cards.Count)
+            if (tLine.Cards.Count == 0)
                 tLine.Cards.Add(card);
             else
                 tLine.Cards.Insert(move.TargetSlotNumber, card);

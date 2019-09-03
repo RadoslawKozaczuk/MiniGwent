@@ -4,8 +4,10 @@ namespace Assets.Scripts.Interfaces
 {
     interface IMainUIController
     {
-        void HandleEndTurnAction();
-
         void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber);
+
+        void HandleTargetSelected();
+        
+        void HandleEndTurnAction();
     }
 }

@@ -22,12 +22,22 @@ namespace Assets.Core
         }
 
         /// <summary>
-        /// Executes given action on all elements starting from the slotNumber-element (inclusive).
-        /// For example if slotNumber = 1, the method will execute on all elements except the first one.
+        /// Executes given action on all elements starting from the slotNumber-element (exclusive).
+        /// For example if slotNumber is 0, the method will execute on all elements except the first one.
         /// </summary>
         public static void AllOnTheRight<T>(this IEnumerable<T> source, int slotNumber, Action<T> action) 
             where T : class
-            => source.GetLast(source.Count() - slotNumber).ToList().ForEach(action);
+        {
+#if UNITY_EDITOR
+            if (slotNumber < 0)
+                throw new ArgumentOutOfRangeException("slotNumber", $"SlotNumber argument cannot be lower than 0");
+#endif
+
+            if (slotNumber >= source.Count())
+                return;
+
+            source.GetLast(source.Count() - slotNumber - 1).ToList().ForEach(action);
+        }
 
         public static IEnumerable<T> GetAllExceptOne<T>(this IEnumerable<T> source, int except)
         {

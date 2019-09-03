@@ -115,15 +115,14 @@ namespace Assets.Scripts.UI
         /// Creates a new free spot and adds card to it.
         /// This method does not inform the game logic about anything.
         /// </summary>
-        public void InsertCard(CardUI card)
+        public void AddCard(CardUI card)
         {
-            card.SlotNumber = Cards.Count;
-
             GameObject slot = Instantiate(MainUIController.Instance.CardContainerPrefab, transform);
             card.transform.SetParent(slot.transform);
             card.transform.localPosition = Vector3.zero;
             card.ParentLineUI = this;
             card.transform.localScale = new Vector3(1, 1, 1);
+            card.SlotNumber = Cards.Count;
 
             Cards.Add(card);
 
@@ -142,12 +141,14 @@ namespace Assets.Scripts.UI
             card.transform.SetParent(slot.transform);
             card.transform.localPosition = Vector3.zero;
             card.ParentLineUI = this;
-            card.SlotNumber = Cards.Count;
+            card.SlotNumber = slotNumber;
 
-            if (slotNumber == Cards.Count)
+            if (Cards.Count == 0)
                 Cards.Add(card);
             else
                 Cards.Insert(slotNumber, card);
+
+            Cards.AllOnTheRight(slotNumber, c => c.SlotNumber++);
 
             RecalculateSpacing();
         }

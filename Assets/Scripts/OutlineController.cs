@@ -28,7 +28,7 @@ namespace Assets.Scripts
 
         public void TurnPulsationOn()
         {
-            _outline.effectColor = MainUIController.GlobalTargetSelectMode 
+            _outline.effectColor = MainUIController.TargetSelectMode 
                 ? _redColor 
                 : _cyanColor;
 
