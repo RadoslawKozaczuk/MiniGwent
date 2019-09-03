@@ -123,8 +123,8 @@ namespace Assets.Core
 
             // hot fix
             int c = _gameLogic.GetLine(_myIndicator, line).Count;
-            if (targetSlotNumber > c)
-                targetSlotNumber = c;
+            if (targetSlotNumber > c || targetSlotNumber < 0)
+                targetSlotNumber = 0;
 
             return new MoveData(_myDeck[fromSlotNumber], _myIndicator, fromSlotNumber, line, targetSlotNumber);
         }

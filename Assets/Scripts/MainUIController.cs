@@ -443,7 +443,12 @@ namespace Assets.Scripts
             var targetCards = new List<CardUI>(targets.Count);
 
             foreach (SkillTargetData target in targets)
-                targetCards.Add(_lines[(int)target.Line][target.SlotNumber]);
+            {
+                // hot fix
+                LineUI l = _lines[(int)target.Line];
+                if(target.SlotNumber < l.Cards.Count)
+                    targetCards.Add(l[target.SlotNumber]);
+            }
 
             _vfxController.ScheduleParticleEffect(targetCards, visualEffect);
 
@@ -479,13 +484,13 @@ namespace Assets.Scripts
                 throw new System.ArgumentOutOfRangeException(
                     "fromSlotNumber",
                     $"FromSlotNumber = {fromSlotNumber} while it cannot be lower than 0 "
-                    + $"or greater than the number of cards in the line ({_lines[(int)fromLine].Count}).");
+                        + $"or greater than the number of cards in the line ({_lines[(int)fromLine].Count}).");
 
             if (targetSlotNumber < 0 || targetSlotNumber > _lines[(int)targetLine].Count)
                 throw new System.ArgumentOutOfRangeException(
                     "targetSlotNumber",
                     $"TargetSlotNumber = {targetSlotNumber} while it cannot be lower than 0 "
-                    + $"or greater than the number of cards in the line ({_lines[(int)targetLine].Count}).");
+                        + $"or greater than the number of cards in the line ({_lines[(int)targetLine].Count}).");
 
             if (targetLine == LineIndicator.TopDeck || targetLine == LineIndicator.BotDeck)
                 throw new System.ArgumentException("Moving card to a deck is not allowed.");
