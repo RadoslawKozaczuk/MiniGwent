@@ -55,6 +55,9 @@ namespace Assets.Scripts.UI
             _infoText.gameObject.SetActive(true);
 
             _infoText.text = _nothingElseToDo;
+
+            Debug.Log("BlockDrag set to true");
+            MainUIController.BlockDragAction = true;
         }
 
         public void SetAiThinking()
@@ -77,6 +80,9 @@ namespace Assets.Scripts.UI
             _infoText.gameObject.SetActive(true);
 
             _infoText.text = _yourTurn;
+
+            Debug.Log("BlockDrag set to false");
+            MainUIController.BlockDragAction = false;
         }
 
         public void SetOff()

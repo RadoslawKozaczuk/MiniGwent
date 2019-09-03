@@ -108,6 +108,8 @@ namespace Assets.Scripts
         #region Interface Implementation
         public async void HandleInterfaceMoveCardRequest(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
+            BlockDragAction = true;
+
             #region Assertions
 #if UNITY_EDITOR
             MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
@@ -121,14 +123,12 @@ namespace Assets.Scripts
             {
                 _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
                 _endTurnPanel.SetNothingElseToDo();
-                BlockDragAction = true;
             }
             else if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
             {
                 await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
                 _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, applySkill: true);
                 _endTurnPanel.SetNothingElseToDo();
-                BlockDragAction = true;
             }
             else if (skill.ExecutionTime == SkillExecutionTime.OnDeployManual
                 &&
@@ -139,7 +139,7 @@ namespace Assets.Scripts
             {
                 if (skill.Targets[0] == SkillTarget.AllyLine)
                     AllyLineSelectMode = true;
-                else if (skill.Targets[0] == SkillTarget.AllyLine)
+                else if (skill.Targets[0] == SkillTarget.SingleEnemy)
                     SingleTargetSelectMode = true;
                 else if (skill.Targets[0] == SkillTarget.EnemyLine)
                     EnemyLineSelectMode = true;
@@ -150,21 +150,21 @@ namespace Assets.Scripts
                 _endTurnPanel.SetSelectTarget();
                 CardSelected = _lines[(int)targetLine][targetSlotNumber];
             }
-            else
+            else // on deploy but no valid targets
             {
                 _endTurnPanel.SetNothingElseToDo();
-                BlockDragAction = true;
             }
         }
 
         public void HandleEndTurnAction()
         {
+            Debug.Log("BlockDrag set to true");
+            BlockDragAction = true;
+
             CurrentPlayer = CurrentPlayer.Opposite();
 
             _endTurnPanel.SetAiThinking();
             _gameLogic.StartNextTurn();
-
-            BlockDragAction = true;
         }
 
         public async void HandleSingleTargetSelected()
@@ -186,8 +186,6 @@ namespace Assets.Scripts
 
             // later on add some extra logic like check if all cards action are played or something like that
             _endTurnPanel.SetNothingElseToDo();
-
-            BlockDragAction = true;
         }
 
         public async void HandleLineSelected()
@@ -203,15 +201,13 @@ namespace Assets.Scripts
 
             _gameLogic.ApplySkillForUI(targets, skill);
 
-            BlockDragAction = true;
-
             _endTurnPanel.SetNothingElseToDo();
         }
         #endregion
 
-        public void StartGame(PlayerControl botControl, bool showUI)
+        public void StartGame(PlayerControl botControl, bool showUI, bool fastAI)
         {
-            _gameLogic = new GameLogic(botControl);
+            _gameLogic = new GameLogic(botControl, fastAI);
 
             _botPlayerControl = botControl;
             ShowUIMode = showUI;
@@ -219,8 +215,11 @@ namespace Assets.Scripts
             if(ShowUIMode)
             {
                 _linesGroup.gameObject.SetActive(true);
-                _endTurnPanel.gameObject.SetActive(true);
-                _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
+                if (_botPlayerControl == PlayerControl.Human)
+                {
+                    _endTurnPanel.gameObject.SetActive(true);
+                    _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
+                }
 
                 // subscribe
                 GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
@@ -343,26 +342,9 @@ namespace Assets.Scripts
             // AI informs me that its turn has ended
             else if(eventArgs.MessageType == GameLogicMessageType.EndTurn)
             {
-                if (_botPlayerControl == PlayerControl.Human)
-                {
-                    if (_botDeck.Count == 0) // nothing else to play
-                        GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
-                    else
-                    {
-                        _endTurnPanel.SetYourTurn();
-                        BlockDragAction = false;
-                    }
-                }
-                else
-                {
-                    if (_botDeck.Count == 0) // nothing else to play
-                        GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
-                    else
-                    {
-                        _endTurnPanel.SetYourTurn();
-                        BlockDragAction = false;
-                    }
-                }
+                _endTurnPanel.SetYourTurn();
+                if (_botPlayerControl == PlayerControl.Human && _botDeck.Count == 0)
+                    GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
             }
 
             // AI informs me that the game is over

@@ -35,13 +35,13 @@ namespace Assets.Core
 
         bool _gameOver;
         
-        public GameLogic(PlayerControl botControlType)
+        public GameLogic(PlayerControl botControlType, bool fastAI)
         {
             _lines = new List<CardModel>[6] { _topDeck, _topBackline, _topFrontline, _botFrontline, _botBackline, _botDeck };
-            _aiTop = new AI(PlayerIndicator.Top, _topDeck, _topBackline, _topFrontline, gameLogic: this, fakeThinking: true);
+            _aiTop = new AI(PlayerIndicator.Top, _topDeck, _topBackline, _topFrontline, gameLogic: this, fakeThinking: !fastAI);
 
             if(botControlType == PlayerControl.AI)
-                _aiBot = new AI(PlayerIndicator.Bot, _botDeck, _botBackline, _botFrontline, gameLogic: this, fakeThinking: true);
+                _aiBot = new AI(PlayerIndicator.Bot, _botDeck, _botBackline, _botFrontline, gameLogic: this, fakeThinking: !fastAI);
 
             _aiReferences = new AI[] { _aiTop, _aiBot };
         }
@@ -439,6 +439,18 @@ namespace Assets.Core
         internal void BroadcastGameOver_StatusUpdate()
         {
             _gameOver = true; // aster this moment all return calls will be ignored
+
+            int top = TopTotalStrength, bot = BotTotalStrength;
+            string msg = top > bot 
+                ? $"Top wins {top} to {bot}" 
+                : top < bot 
+                    ? $"Bot wins {bot} to {top}" 
+                    : $"Draw {top} - {bot}";
+
+            // broadcast game log last message
+            GameLogicLogUpdateEventHandler?.Invoke(
+                this,
+                new GameLogicLogUpdateEventArgs(PlayerIndicator.Top, null, $"\n{msg}\n === GAME OVER ===", top, bot));
 
             if (GameLogicStatusChangedEventHandler == null)
                 ReturnControl(); // interface not attached - immediately return control

@@ -29,8 +29,8 @@ namespace Assets.Scripts.UI
             if (!string.IsNullOrEmpty(eventArgs.LastExecutedCommand))
             {
                 _executionStackText.text = string.IsNullOrEmpty(_executionStackText.text)
-                    ? "-> " + eventArgs.LastExecutedCommand
-                    : _executionStackText.text + $"\n-> " + eventArgs.LastExecutedCommand;
+                    ? eventArgs.LastExecutedCommand
+                    : _executionStackText.text + $"\n" + eventArgs.LastExecutedCommand;
             }
         }
     }

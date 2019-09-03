@@ -10,6 +10,7 @@ namespace Assets.Scripts.UI
         [SerializeField] TMP_Dropdown _botPlayerDropdown;
         [SerializeField] MainUIController _mainUIController;
         [SerializeField] Toggle _showUIToggle;
+        [SerializeField] Toggle _fastAIToggle;
 
         PlayerControl _botControl; // top is always AI
 
@@ -32,7 +33,7 @@ namespace Assets.Scripts.UI
         public void StartGame()
         {
             gameObject.SetActive(false);
-            _mainUIController.StartGame(_botControl, _showUIToggle.isOn);
+            _mainUIController.StartGame(_botControl, _showUIToggle.isOn, _fastAIToggle.isOn);
         }
     }
 }
