@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Assets.Core
 {
@@ -115,18 +114,17 @@ namespace Assets.Core
              
             // 3. brilliant! Finally choose a random slot and play that card there
             int maxSlotNumber = line == PlayerLine.Backline ? _myBackline.Count : _myFrontline.Count;
-            Debug.Log("AI Move Calculation: MaxSlotNumber " + maxSlotNumber);
-
             int targetSlotNumber = maxSlotNumber == 0 
                 ? 0 
-                : UnityEngine.Random.Range(0, maxSlotNumber + 1);
-
-            Debug.Log($"AI {MyIndicatorToStr} came up with a move idea: fSlot:{fromSlotNumber}" 
-                + $" tLine:{line.ToString()}" 
-                + $" tSlot:{targetSlotNumber}");
+                : UnityEngine.Random.Range(0, maxSlotNumber);
 
             if (_fakeThinking) // pretend it took you some time to come up with such an amazing idea
-                await Task.Delay(UnityEngine.Random.Range(MIN_THINKING_TIME, MAX_THINKING_TIME)); 
+                await Task.Delay(UnityEngine.Random.Range(MIN_THINKING_TIME, MAX_THINKING_TIME));
+
+            // hot fix
+            int c = _gameLogic.GetLine(_myIndicator, line).Count;
+            if (targetSlotNumber > c)
+                targetSlotNumber = c;
 
             return new MoveData(_myDeck[fromSlotNumber], _myIndicator, fromSlotNumber, line, targetSlotNumber);
         }
@@ -281,10 +279,8 @@ namespace Assets.Core
             return targets;
         }
 
-        void PlaySkillVFX(CardSkill skill, List<SkillTargetData> targets)
-        {
-            _gameLogic.BroadcastPlayVFX_StatusUpdate(targets, skill.VisualEffect);
-        }
+        void PlaySkillVFX(CardSkill skill, List<SkillTargetData> targets) 
+            => _gameLogic.BroadcastPlayVFX_StatusUpdate(targets, skill.VisualEffect);
 
         void ApplySkill(CardSkill skill, List<SkillTargetData> targets)
         {

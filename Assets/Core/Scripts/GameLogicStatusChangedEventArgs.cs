@@ -9,8 +9,8 @@ namespace Assets.Core
     /// </summary>
     public sealed class GameLogicStatusChangedEventArgs
     {
-        public GameLogicMessageType MessageType;
-        public PlayerIndicator CurrentPlayer;
+        public readonly GameLogicMessageType MessageType;
+        public readonly PlayerIndicator CurrentPlayer;
         public MoveData LastMove;
         public int TopTotalStrength;
         public int BotTotalStrength;

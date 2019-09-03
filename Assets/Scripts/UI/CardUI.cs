@@ -68,17 +68,17 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            MainUIController.MouseHoveringOverPopulatedAllyLine = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverPopulatedAllyLine = PlayerIndicator == PlayerIndicator.Bot
+                && ParentLineUI.LineIndicator != LineIndicator.BotDeck;
             MainUIController.MouseHoveringOverAllyUnit = PlayerIndicator == PlayerIndicator.Bot;
             MainUIController.MouseHoveringOverPopulatedEnemyLine 
                 = PlayerIndicator == PlayerIndicator.Top && ParentLineUI.LineIndicator != LineIndicator.TopDeck;
             MainUIController.MouseHoveringOverEnemyUnit
-                = PlayerIndicator == PlayerIndicator.Top && !Hidden;
+                = PlayerIndicator == PlayerIndicator.Top && ParentLineUI.LineIndicator != LineIndicator.TopDeck;
 
             MainUIController.CardMouseOver = this;
 
-            // if nothing is being dragged
-            if (!MainUIController.CardBeingDraged && !_hidden)
+            if (!MainUIController.CardBeingDraged && !Hidden)
             {
                 _outlineController.TurnPulsationOn(MainUIController.SingleTargetSelectMode && MainUIController.MouseHoveringOverEnemyUnit);
                 MainUIController.Instance.CardInfoPanel.gameObject.SetActive(true);
@@ -122,6 +122,8 @@ namespace Assets.Scripts
 
         public void OnEndDrag(PointerEventData eventData)
         {
+            MainUIController.CardBeingDraged = null;
+
             if (!Draggable || MainUIController.BlockDragAction || MainUIController.SingleTargetSelectMode)
                 return;
 
@@ -146,8 +148,6 @@ namespace Assets.Scripts
                 transform.SetParent(_preDragLocation);
                 transform.localPosition = Vector3.zero; // go back where you were
             }
-
-            MainUIController.CardBeingDraged = null;
         }
         #endregion
     }

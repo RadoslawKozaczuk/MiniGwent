@@ -10,7 +10,7 @@ namespace Assets.Core
     public class GameLogic
     {
         public const int MAX_NUMBER_OF_CARDS_IN_LINE = 10;
-        const int NUMBER_OF_CARDS_IN_DECK = 6;
+        const int NUMBER_OF_CARDS_IN_DECK = 7;
 
         public static event EventHandler<GameLogicStatusChangedEventArgs> GameLogicStatusChangedEventHandler;
         public static event EventHandler<GameLogicLogUpdateEventArgs> GameLogicLogUpdateEventHandler;

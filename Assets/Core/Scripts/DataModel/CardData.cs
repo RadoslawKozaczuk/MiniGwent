@@ -1,5 +1,4 @@
 ﻿using Assets.Core.CardSkills;
-using System.Collections.Generic;
 
 namespace Assets.Core.DataModel
 {

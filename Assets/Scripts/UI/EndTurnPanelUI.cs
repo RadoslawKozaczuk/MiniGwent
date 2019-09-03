@@ -81,7 +81,6 @@ namespace Assets.Scripts.UI
 
             _infoText.text = _yourTurn;
 
-            Debug.Log("BlockDrag set to false");
             MainUIController.BlockDragAction = false;
         }
 

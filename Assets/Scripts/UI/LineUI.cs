@@ -29,10 +29,7 @@ namespace Assets.Scripts.UI
         bool _isMouseOver;
 
         #region Unity life-cycle methods
-        void Awake()
-        {
-            _gridLayoutGroup = GetComponent<GridLayoutGroup>();
-        }
+        void Awake() => _gridLayoutGroup = GetComponent<GridLayoutGroup>();
 
         void Update()
         {
@@ -50,7 +47,9 @@ namespace Assets.Scripts.UI
         #region Interfaces Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            MainUIController.MouseHoveringOverPopulatedAllyLine = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverPopulatedAllyLine = PlayerIndicator == PlayerIndicator.Bot
+                && LineIndicator != LineIndicator.BotDeck
+                && Cards.Count > 0;
             MainUIController.MouseHoveringOverPopulatedEnemyLine = PlayerIndicator == PlayerIndicator.Top 
                 && LineIndicator != LineIndicator.TopDeck
                 && Cards.Count > 0;

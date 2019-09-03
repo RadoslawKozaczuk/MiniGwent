@@ -13,7 +13,6 @@
         public CardModel(int id, PlayerIndicator playerIndicator)
         {
             PlayerIndicator = playerIndicator;
-
             CardId = id;
             DefaultStrength = GameLogic.DB[id].Strength;
             CurrentStrength = DefaultStrength;

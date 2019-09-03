@@ -13,9 +13,6 @@
         {
             Card = card;
             FromLine = playerIndicator == PlayerIndicator.Top ? LineIndicator.TopDeck : LineIndicator.BotDeck;
-
-            // TopDeck = 0, TopBackline = 1, TopFrontline = 2, BotFrontline = 3, BotBackline = 4, BotDeck = 5
-            // Deck = 0, Backline = 1, Frontline = 2
             TargetLine = playerIndicator == PlayerIndicator.Bot 
                 ? (LineIndicator)(5 - (int)targetLine) 
                 : (LineIndicator)(int)targetLine;

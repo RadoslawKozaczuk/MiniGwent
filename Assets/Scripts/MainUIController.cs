@@ -89,7 +89,7 @@ namespace Assets.Scripts
                 HandleEndTurnAction();
             else if(Input.GetMouseButtonDown(0))
             {
-                if(SingleTargetSelectMode && MouseHoveringOverEnemyUnit)
+                if (SingleTargetSelectMode && MouseHoveringOverEnemyUnit)
                     HandleSingleTargetSelected();
                 else if(EnemyLineSelectMode && MouseHoveringOverPopulatedEnemyLine)
                 {
@@ -220,6 +220,10 @@ namespace Assets.Scripts
                     _endTurnPanel.gameObject.SetActive(true);
                     _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
                 }
+                else
+                {
+                    BlockDragAction = true;
+                }
 
                 // subscribe
                 GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
@@ -318,14 +322,7 @@ namespace Assets.Scripts
                     throw new System.ArgumentNullException("LastMove", "LastMove cannot be null in this context.");
 #endif
 
-                Debug.Log($"MoveData: fLine:{move.FromLine.ToString()}" 
-                    + $" fSlot:{move.FromSlotNumber}" 
-                    + $" tLine:{move.TargetLine.ToString()}" 
-                    + $" tSlot:{move.TargetSlotNumber}");
-
-                MoveCardOnUI(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
-
-                // TODO: add card move animation and return control after its over
+                MoveCardOnUI(move);
             }
 
             // AI wants me to play VFXs
@@ -342,9 +339,13 @@ namespace Assets.Scripts
             // AI informs me that its turn has ended
             else if(eventArgs.MessageType == GameLogicMessageType.EndTurn)
             {
-                _endTurnPanel.SetYourTurn();
-                if (_botPlayerControl == PlayerControl.Human && _botDeck.Count == 0)
-                    GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
+                if (_botPlayerControl == PlayerControl.Human)
+                {
+                    if(_botDeck.Count == 0)
+                        GameOver(eventArgs.TopTotalStrength, eventArgs.BotTotalStrength);
+                    else
+                        _endTurnPanel.SetYourTurn();
+                }
             }
 
             // AI informs me that the game is over
@@ -378,6 +379,42 @@ namespace Assets.Scripts
             tLine.InsertCard(card, targetSlotNumber);
 
             return card;
+        }
+
+        void MoveCardOnUI(MoveData move)
+        {
+            #region Assertions
+#if UNITY_EDITOR
+            MoveCardAssertions(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
+#endif
+            #endregion
+
+            LineUI fLine = _lines[(int)move.FromLine];
+            LineUI tLine = _lines[(int)move.TargetLine];
+
+            Transform cardContainer = fLine.transform.GetChild(move.FromSlotNumber);
+            cardContainer.SetParent(tLine.transform);
+            cardContainer.SetSiblingIndex(move.TargetSlotNumber);
+
+            CardUI card = cardContainer.transform.GetChild(0).GetComponent<CardUI>();
+            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
+            card.ParentLineUI = tLine;
+            card.SlotNumber = move.TargetSlotNumber;
+
+            // add to list and increase slot number on the right by one
+            if (move.TargetSlotNumber == tLine.Cards.Count)
+                tLine.Cards.Add(card);
+            else
+            {
+                tLine.Cards.Insert(move.TargetSlotNumber, card);
+                tLine.Cards.GetLast(tLine.Cards.Count - move.TargetSlotNumber - 1).ToList()
+                    .ForEach(c => c.SlotNumber++);
+            }
+
+            // remove from list and decrease slot number on the right by one
+            fLine.Cards.RemoveAt(move.FromSlotNumber);
+            fLine.Cards.GetLast(fLine.Cards.Count - move.FromSlotNumber).ToList()
+                .ForEach(c => c.SlotNumber--);
         }
 
         async Task DisplayVisualEffectsIfAny(CardUI movedCard, LineIndicator targetLine, int targetSlotNumber)

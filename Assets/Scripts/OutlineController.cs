@@ -10,9 +10,7 @@ namespace Assets.Scripts
         static Color _orange = new Color(255, 190, 0, 255);
 
         public bool BigPulsation;
-
         [SerializeField] Outline _outline;
-
         bool _pulsation;
 
         #region Unity life-cycle methods
