@@ -12,10 +12,8 @@ namespace Assets.Core
         public const int MAX_NUMBER_OF_CARDS_IN_LINE = 10;
         const int NUMBER_OF_CARDS_IN_DECK = 6;
 
-        /// <summary>
-        /// Subscribe to this event to receive notifications each time resource number has changed.
-        /// </summary>
         public static event EventHandler<GameLogicStatusChangedEventArgs> GameLogicStatusChangedEventHandler;
+        public static event EventHandler<GameLogicLogUpdateEventArgs> GameLogicLogUpdateEventHandler;
         internal static readonly DummyDB DB = new DummyDB();
 
         int TopTotalStrength => _topBackline.Sum(c => c.CurrentStrength) + _topFrontline.Sum(c => c.CurrentStrength);
@@ -79,7 +77,7 @@ namespace Assets.Core
                 if (_topDeck.Count == 0)
                 {
                     // AI has nothing else to do
-                    BroadcastGameOver(); // for now player always plays first so we can safely broadcast game over here
+                    BroadcastGameOver_StatusUpdate(); // for now player always plays first so we can safely broadcast game over here
                 }
                 else
                     _aiTop.StartAITurn();
@@ -89,7 +87,7 @@ namespace Assets.Core
                 if (_botDeck.Count == 0)
                 {
                     // AI has nothing else to do
-                    BroadcastGameOver(); // for now player always plays first so we can safely broadcast game over here
+                    BroadcastGameOver_StatusUpdate(); // for now player always plays first so we can safely broadcast game over here
                 }
                 else
                     _aiBot.StartAITurn();
@@ -167,7 +165,9 @@ namespace Assets.Core
             else
                 tLine.Insert(targetSlotNumber, card);
 
-            if(applySkill)
+            BroadcastCardMove_LogUpdate(CurrentPlayer, new MoveData(card, fromLine, fromSlotNumber, targetLine, targetSlotNumber));
+
+            if (applySkill)
             {
                 ApplySkillEffectIfAny(card, targetLine, targetSlotNumber);
 
@@ -180,7 +180,7 @@ namespace Assets.Core
                 RemoveDeadOnes();
 
                 // inform upper logic about new strengths
-                BroadcastUpdateStrength(cardStrengths);
+                BroadcastUpdateStrength_StatusUpdate(cardStrengths);
             }
         }
 
@@ -204,10 +204,10 @@ namespace Assets.Core
             RemoveDeadOnes();
 
             // inform upper logic about new strengths
-            BroadcastUpdateStrength(cardStrengths);
+            BroadcastUpdateStrength_StatusUpdate(cardStrengths);
         }
 
-        public void MoveCardForAI(MoveData moveData)
+        public void MoveCardForAI(PlayerIndicator player, MoveData moveData)
         {
             LineIndicator fromLine = moveData.FromLine;
             int fromSlotNumber = moveData.FromSlotNumber;
@@ -236,6 +236,8 @@ namespace Assets.Core
                 tLine.Add(card);
             else
                 tLine.Insert(targetSlotNumber, card);
+
+            BroadcastCardMove_LogUpdate(player, moveData);
         }
 
         void RemoveDeadOnes()
@@ -261,6 +263,8 @@ namespace Assets.Core
 
                 foreach (CardModel target in targets)
                     skill.Effect(target);
+
+                BroadcastSkillEffect_LogUpdate(CurrentPlayer, targets, skill);
             }
         }
 
@@ -285,14 +289,24 @@ namespace Assets.Core
 
         internal void ApplySkillEffectForAI(CardSkill skill, List<SkillTargetData> targets)
         {
+            var models = new List<CardModel>(targets.Count);
+
             foreach (SkillTargetData target in targets)
-                skill.Effect(_lines[(int)target.Line][target.SlotNumber]);
+            {
+                CardModel model = _lines[(int)target.Line][target.SlotNumber];
+                models.Add(model);
+                skill.Effect(model);
+            }
+
+            BroadcastSkillEffect_LogUpdate(CurrentPlayer, models, skill);
         }
 
         internal void ApplySkillEffectForAISingleTarget(CardSkill skill, LineIndicator targetLine, int slotNumber)
         {
             CardModel card = _lines[(int)targetLine][slotNumber];
             skill.Effect(card);
+
+            BroadcastSkillEffect_LogUpdate(CurrentPlayer, new List<CardModel>(1) { card }, skill);
         }
 
         /// <summary>
@@ -308,7 +322,7 @@ namespace Assets.Core
                 targetLine.Add(card);
             }
 
-            BroadcastUpdateStrength();
+            BroadcastUpdateStrength_StatusUpdate();
 
             if (doNotSendCopy)
                 return null;
@@ -344,82 +358,156 @@ namespace Assets.Core
             return currentStrengths;
         }
 
-        // we call the event - if there is no subscribers we will get a null exception error therefore we use a safe call (null check)
-        internal void BroadcastMoveCard(MoveData move) 
-            => GameLogicStatusChangedEventHandler?.Invoke(
-                this, 
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.MoveCard, CurrentPlayer)
-                {
-                    LastMove = move,
-                    TopTotalStrength = TopTotalStrength,
-                    BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus(),
-                    LastExecutedCommand = $"Player <b>{CurrentPlayer.ToString()}</b> moved card "
-                        + $"from {move.FromLine.ToString()} slot {move.FromSlotNumber}"
-                        + $"to {move.TargetLine.ToString()} slot {move.TargetSlotNumber}"
-                });
+        #region Event Broadcasting
+        internal void BroadcastMoveCard_StatusUpdate(MoveData move)
+        {
+            if (GameLogicStatusChangedEventHandler == null)
+                ReturnControl(); // interface not attached - immediately return control
+            else
+                GameLogicStatusChangedEventHandler.Invoke(
+                    this,
+                    new GameLogicStatusChangedEventArgs(GameLogicMessageType.MoveCard, CurrentPlayer)
+                    {
+                        LastMove = move,
+                        TopTotalStrength = TopTotalStrength,
+                        BotTotalStrength = BotTotalStrength,
+                    });
+        }
 
-        internal void BroadcastPlaySkillVFX(List<SkillTargetData> targets, SkillVisualEffect visualEffect)
-            => GameLogicStatusChangedEventHandler?.Invoke(
-                this, 
+        internal void BroadcastPlayVFX_StatusUpdate(List<SkillTargetData> targets, SkillVisualEffect visualEffect)
+        {
+            if (GameLogicStatusChangedEventHandler == null)
+                ReturnControl(); // interface not attached - immediately return control
+            else
+                GameLogicStatusChangedEventHandler.Invoke(
+                this,
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.PlaySkillVFX, CurrentPlayer)
                 {
                     Targets = targets,
                     VisualEffect = visualEffect,
                     TopTotalStrength = TopTotalStrength,
-                    BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus(),
-                    LastExecutedCommand = $"<b>{CurrentPlayer.ToString()}</b> Player's card interacted with following cards: "
-                        + string.Join(", ", targets)
-                });
-
-        // early evaluation
-        internal void BroadcastUpdateStrength(List<List<int>> cardStrengths)
-            => GameLogicStatusChangedEventHandler?.Invoke(
-                this,
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
-                {
-                    CardStrengths = cardStrengths,
-                    TopTotalStrength = TopTotalStrength,
-                    BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus()
-                });
-
-        // late evaluation
-        internal void BroadcastUpdateStrength()
-            => GameLogicStatusChangedEventHandler?.Invoke(
-                this,
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
-                {
-                    CardStrengths = GetCardStrengths(),
-                    TopTotalStrength = TopTotalStrength,
-                    BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus()
-                });
-
-        internal void BroadcastEndTurn()
-        {
-            CurrentPlayer = CurrentPlayer.Opposite();
-
-            GameLogicStatusChangedEventHandler?.Invoke(
-                this,
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn, CurrentPlayer)
-                {
-                    TopTotalStrength = TopTotalStrength,
-                    BotTotalStrength = BotTotalStrength,
-                    CurrentStatus = GetCurrentStatus()
+                    BotTotalStrength = BotTotalStrength
                 });
         }
 
-        internal void BroadcastGameOver()
-            => GameLogicStatusChangedEventHandler?.Invoke(
-                this, 
-                new GameLogicStatusChangedEventArgs(GameLogicMessageType.GameOver, CurrentPlayer)
-                {
-                     TopTotalStrength = TopTotalStrength,
-                     BotTotalStrength = BotTotalStrength,
-                     CurrentStatus = GetCurrentStatus()
-                });
+        // early evaluation
+        internal void BroadcastUpdateStrength_StatusUpdate(List<List<int>> cardStrengths)
+        {
+            if (GameLogicStatusChangedEventHandler == null)
+                ReturnControl(); // interface not attached - immediately return control
+            else
+                GameLogicStatusChangedEventHandler.Invoke(
+                    this,
+                    new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
+                    {
+                        CardStrengths = cardStrengths,
+                        TopTotalStrength = TopTotalStrength,
+                        BotTotalStrength = BotTotalStrength,
+                    });
+        }
+
+        // late evaluation
+        internal void BroadcastUpdateStrength_StatusUpdate()
+        {
+            if (GameLogicStatusChangedEventHandler == null)
+                ReturnControl(); // interface not attached - immediately return control
+            else
+                GameLogicStatusChangedEventHandler.Invoke(
+                    this,
+                    new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
+                    {
+                        CardStrengths = GetCardStrengths(),
+                        TopTotalStrength = TopTotalStrength,
+                        BotTotalStrength = BotTotalStrength,
+                    });
+        }
+
+        internal void BroadcastEndTurn_StatusUpdate()
+        {
+            CurrentPlayer = CurrentPlayer.Opposite();
+
+            if (GameLogicStatusChangedEventHandler == null)
+                ReturnControl(); // interface not attached - immediately return control
+            else
+                GameLogicStatusChangedEventHandler.Invoke(
+                    this,
+                    new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn, CurrentPlayer)
+                    {
+                        TopTotalStrength = TopTotalStrength,
+                        BotTotalStrength = BotTotalStrength,
+                    });
+        }
+
+        internal void BroadcastGameOver_StatusUpdate()
+        {
+            if (GameLogicStatusChangedEventHandler == null)
+                ReturnControl(); // interface not attached - immediately return control
+            else
+                GameLogicStatusChangedEventHandler.Invoke(
+                    this,
+                    new GameLogicStatusChangedEventArgs(GameLogicMessageType.GameOver, CurrentPlayer)
+                    {
+                        TopTotalStrength = TopTotalStrength,
+                        BotTotalStrength = BotTotalStrength,
+                    });
+        }
+
+        internal void BroadcastCardMove_LogUpdate(PlayerIndicator player, MoveData move)
+        {
+#if UNITY_EDITOR
+            if (move == null)
+                throw new ArgumentNullException("move", "Move argument cannot be null in this context.");
+#endif
+
+            string cardTitle = DB[move.Card.CardId].Title;
+            string lastExecutedCommand = 
+                $"Player <color=yellow><b>{player.ToString()}</b></color> moved card <color=yellow><b>{cardTitle}</b></color> "
+                + $"from {move.FromLine.ToString()} slot {move.FromSlotNumber} "
+                + $"to {move.TargetLine.ToString()} slot {move.TargetSlotNumber}";
+
+            GameLogicLogUpdateEventHandler?.Invoke(
+                this,
+                new GameLogicLogUpdateEventArgs(
+                    player, GetCurrentStatus(), lastExecutedCommand, TopTotalStrength, BotTotalStrength));
+        }
+
+        internal void BroadcastSkillEffect_LogUpdate(PlayerIndicator player, List<CardModel> targets, CardSkill skill)
+        {
+#if UNITY_EDITOR
+            if (skill == null)
+                throw new ArgumentNullException("skill", "Skill argument cannot be null in this context.");
+#endif
+
+            if (targets == null || targets.Count == 0)
+                return;
+
+            // a bit of a hack
+            CardModel cardDummy = new CardModel(0, PlayerIndicator.Bot);
+            skill.Effect(cardDummy);
+
+            // true - heals, false - damages
+            bool heals = cardDummy.CurrentStrength > cardDummy.DefaultStrength;
+
+            string cardTitle = "ToBeDetermined";
+            string lastExecutedCommand;
+            if (targets.Count == 1)
+            {
+                int howPowerful = Math.Abs(cardDummy.DefaultStrength - cardDummy.CurrentStrength);
+                lastExecutedCommand = $"<color=yellow><b>{CurrentPlayer.ToString()}</b></color> Player's card <b>{cardTitle}</b> "
+                    + $"{HealsOrDamages()} enemy's {DB[targets[0].CardId].Title} for {howPowerful} damage";
+            }
+            else // many targets
+                lastExecutedCommand = $"<b>{CurrentPlayer.ToString()}</b> Player's card <color=yellow><b>{cardTitle}</b></color> "
+                    + $"{HealsOrDamages()} following cards: " + string.Join(", ", targets);
+
+            string HealsOrDamages() => heals ? "<color=green><b>heals</b></color>" : "<color=red>damages</b></color>";
+
+            GameLogicLogUpdateEventHandler?.Invoke(
+                this,
+                new GameLogicLogUpdateEventArgs(
+                    player, GetCurrentStatus(), lastExecutedCommand, TopTotalStrength, BotTotalStrength));
+        }
+        #endregion
 
         #region Assertions
 #if UNITY_EDITOR

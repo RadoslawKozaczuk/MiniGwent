@@ -10,15 +10,14 @@ namespace Assets.Scripts.UI
         [SerializeField] TextMeshProUGUI _statusText;
         [SerializeField] TextMeshProUGUI _executionStackText;
 
-        // subscribe to GameLogic
         void Awake()
         {
-            GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
+            GameLogic.GameLogicLogUpdateEventHandler += HandleGameLogicLogUpdate;
             _statusText.text = "";
             _executionStackText.text = "";
         }
 
-        void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
+        void HandleGameLogicLogUpdate(object sender, GameLogicLogUpdateEventArgs eventArgs)
         {
             if (!string.IsNullOrEmpty(eventArgs.CurrentStatus))
                 _statusText.text

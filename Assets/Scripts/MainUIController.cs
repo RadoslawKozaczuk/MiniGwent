@@ -78,9 +78,6 @@ namespace Assets.Scripts
 
             // for convenience
             _lines = new LineUI[6] { _topDeck, _topBackline, _topFrontline, _botFrontline, _botBackline, _botDeck };
-
-            // subscribe
-            GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
         }
 
         void Update()
@@ -164,17 +161,27 @@ namespace Assets.Scripts
             }
             else if(skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
             {
-                // waiting for user response
-                _endTurnPanel.SetSelectTarget();
-                GlobalTargetSelectMode = true;
+                // check if any possible targets
+                if(_topBackline.Count > 0 || _topFrontline.Count > 0)
+                {
+                    // waiting for user response
+                    _endTurnPanel.SetSelectTarget();
+                    GlobalTargetSelectMode = true;
 
-                CardSelected = _lines[(int)targetLine][targetSlotNumber];
+                    CardSelected = _lines[(int)targetLine][targetSlotNumber];
+
+                    
+
+                    // just deployed card need to be constantly outlined (without pulsation)
+                    // any enemy card need to highlighted with red pulsation instead of blue
+                }
+                else
+                {
+                    _endTurnPanel.SetNothingElseToDo();
+                }
 
                 // apply the effects - this will NOT apply the card skill effects
                 _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
-
-                // just deployed card need to be constantly outlined (without pulsation)
-                // any enemy card need to highlighted with red pulsation instead of blue
             }
         }
         #endregion
@@ -191,6 +198,9 @@ namespace Assets.Scripts
                 _linesGroup.gameObject.SetActive(true);
                 _endTurnPanel.gameObject.SetActive(true);
                 _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
+
+                // subscribe
+                GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
             }
 
             _statusPanel.gameObject.SetActive(true);
@@ -276,7 +286,7 @@ namespace Assets.Scripts
         {
             if (!GlobalShowUIMode)
             {
-                _gameLogic.ReturnControl(); // no interface - return control immediately
+                _gameLogic.ReturnControl(); // interface disabled - return control immediately
                 return;
             }
 

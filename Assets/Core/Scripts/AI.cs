@@ -44,14 +44,14 @@ namespace Assets.Core
             await Task.WhenAll(task);
 
             MoveData move = task.Result;
-            _gameLogic.MoveCardForAI(move); // you moved this card
+            _gameLogic.MoveCardForAI(_myIndicator, move); // you moved this card
             // upper logic knows nothing at this point yet
             
             // create the rest of the plan
             CardSkill skill = GameLogic.DB[move.Card.CardId].Skill;
             if(skill != null)
             {
-                List<SkillTargetData> targets = new List<SkillTargetData>(); // can be empty
+                var targets = new List<SkillTargetData>(); // can be empty
 
                 if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
                     targets = GetTargetsOnDeployAutomatic(skill, move.TargetLine, move.TargetSlotNumber);
@@ -76,7 +76,7 @@ namespace Assets.Core
             _taskQueue.Enqueue(EndTurn);
 
             // inform the upper logic about the card move you have done
-            _gameLogic.BroadcastMoveCard(move);
+            _gameLogic.BroadcastMoveCard_StatusUpdate(move);
         }
 
         internal void ReturnControl()
@@ -190,27 +190,27 @@ namespace Assets.Core
         void PlaySkillVFX(CardSkill skill, List<SkillTargetData> targets)
         {
             //Debug.Log($"AI {MyIndicator} invoked PlaySkillVFX action");
-            _gameLogic.BroadcastPlaySkillVFX(targets, skill.VisualEffect);
+            _gameLogic.BroadcastPlayVFX_StatusUpdate(targets, skill.VisualEffect);
         }
 
         void ApplySkill(CardSkill skill, List<SkillTargetData> targets)
         {
             //Debug.Log($"AI {MyIndicator} invoked ApplySkill action");
             _gameLogic.ApplySkillEffectForAI(skill, targets);
-            _gameLogic.BroadcastUpdateStrength();
+            _gameLogic.BroadcastUpdateStrength_StatusUpdate();
         }
 
         void UpdateStrength()
         {
             //Debug.Log($"AI {MyIndicator} invoked UpdateStrength action");
-            _gameLogic.BroadcastUpdateStrength();
+            _gameLogic.BroadcastUpdateStrength_StatusUpdate();
         }
 
         void EndTurn()
         {
             Debug.Log($"AI {MyIndicatorToStr} invoked EndTurn action");
             _gameLogic.EndTurnMsgSent = true; // indicates that AI is done
-            _gameLogic.BroadcastEndTurn();
+            _gameLogic.BroadcastEndTurn_StatusUpdate();
         }
     }
 }
