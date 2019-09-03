@@ -91,10 +91,10 @@ namespace Assets.Core
 #endif
 
             var list = new List<T>(2);
+            if (slotNumber > 0)
+                list.Add(source.ElementAt(slotNumber - 1));
             if (slotNumber < source.Count() - 1)
                 list.Add(source.ElementAt(slotNumber + 1));
-            if(slotNumber > 0)
-                list.Add(source.ElementAt(slotNumber - 1));
             return list;
         }
 

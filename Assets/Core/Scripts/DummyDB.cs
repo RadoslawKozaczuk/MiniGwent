@@ -17,7 +17,7 @@ namespace Assets.Core
                 title: "Stupid Dog",
                 description: "Is so stupid that it bites its own allies for no reason. "
                     + "When deployed bites an ally unit on the right inflicting 1 DMG.",
-                strength: 5
+                strength: 3
                 ,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployAutomatic,
@@ -29,7 +29,7 @@ namespace Assets.Core
                 title: "Smelly Fish",
                 description: "Stinks like a dumpster. "
                     + "When deployed inflicts 1 DMG to all units at your line (except the fish itself) and the corresponding enemy line.",
-                strength: 5,
+                strength: 2,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployAutomatic, 
                     targets: new List<SkillTarget> { SkillTarget.AllInLineExceptMe, SkillTarget.CorrespondingEnemyLine }, 
@@ -43,7 +43,7 @@ namespace Assets.Core
             new CardData(
                 title: "Elven Archer",
                 description: "On deploy he shot one enemy of your choice in the eye inflicting 3 DMG.",
-                strength: 5,
+                strength: 3,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployManual,
                     targets: new List<SkillTarget> { SkillTarget.SingleEnemy },
@@ -52,7 +52,7 @@ namespace Assets.Core
             new CardData(
                 title: "Tree of Eternity",
                 description: "Heals allies on left and right. When deployed increases strength of nearby allies by 1.",
-                strength: 5,
+                strength: 6,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployAutomatic,
                     targets: new List<SkillTarget> { SkillTarget.BothNeighbors },
@@ -63,7 +63,7 @@ namespace Assets.Core
                 title: "Troll",
                 description: "When deployed he trolls an ally unit on the left side inflicting 1 DMG. "
                     + "But that's not all he also trolls the whole enemy corresponding line inflicting 1 DMG to every unit.",
-                strength: 5,
+                strength: 4,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployAutomatic,
                     targets: new List<SkillTarget> { SkillTarget.LeftNeighbor, SkillTarget.CorrespondingEnemyLine },
@@ -83,7 +83,7 @@ namespace Assets.Core
             new CardData(
                 title: "Sorceress",
                 description: "When deployed she casts a powerful spell, healing 1 strength of each unit (including herself) in the line of choice.",
-                strength: 5,
+                strength: 3,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployManual,
                     targets: new List<SkillTarget> { SkillTarget.AllyLine },
@@ -93,7 +93,7 @@ namespace Assets.Core
             new CardData(
                 title: "Wizard",
                 description: "When deployed he unleashes powerful fire magic, inflicting 2 damage to all units in the line of choice.",
-                strength: 5,
+                strength: 4,
                 skill: new CardSkill(
                     executionTime: SkillExecutionTime.OnDeployManual,
                     targets: new List<SkillTarget> { SkillTarget.EnemyLine },
