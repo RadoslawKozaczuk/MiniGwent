@@ -28,7 +28,7 @@ namespace Assets.Scripts
 
         public void TurnPulsationOn()
         {
-            _outline.effectColor = MainUIController.TargetSelectMode 
+            _outline.effectColor = MainUIController.TargetSelectMode && !MainUIController.MouseHoveringOverAllyLine
                 ? _redColor 
                 : _cyanColor;
 

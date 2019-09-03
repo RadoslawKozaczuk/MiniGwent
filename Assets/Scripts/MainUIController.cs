@@ -67,6 +67,10 @@ namespace Assets.Scripts
 
         public static bool TargetSelectMode;
         public static bool ShowUIMode;
+        public static bool MouseHoveringOverAllyLine;
+        public static bool MouseHoveringOverAllyUnit;
+        public static bool MouseHoveringOverEnemyLine;
+        public static bool MouseHoveringOverEnemyUnit;
 
         LineUI[] _lines;
 
@@ -86,11 +90,8 @@ namespace Assets.Scripts
                 HandleEndTurnAction();
             else if(Input.GetMouseButtonDown(0))
             {
-                if(TargetSelectMode && CardMouseOver) // I need targets
-                {
-                    // target selected
+                if(TargetSelectMode && MouseHoveringOverEnemyUnit)
                     HandleTargetSelected();
-                }
             }
         }
         #endregion

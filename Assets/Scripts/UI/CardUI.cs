@@ -68,6 +68,13 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
+            MainUIController.MouseHoveringOverAllyLine = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverAllyUnit = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverEnemyLine 
+                = PlayerIndicator == PlayerIndicator.Top && ParentLineUI.LineIndicator != LineIndicator.TopDeck;
+            MainUIController.MouseHoveringOverEnemyUnit
+                = PlayerIndicator == PlayerIndicator.Top && !Hidden;
+
             MainUIController.CardMouseOver = this;
 
             // if nothing is being dragged
@@ -81,6 +88,11 @@ namespace Assets.Scripts
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            MainUIController.MouseHoveringOverAllyLine = false;
+            MainUIController.MouseHoveringOverAllyUnit = false;
+            MainUIController.MouseHoveringOverEnemyLine = false;
+            MainUIController.MouseHoveringOverEnemyUnit = false;
+
             MainUIController.CardMouseOver = null;
 
             _outlineController.TurnPulsationOff();
@@ -89,7 +101,7 @@ namespace Assets.Scripts
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (!Draggable || MainUIController.BlockDragAction)
+            if (!Draggable || MainUIController.BlockDragAction || MainUIController.TargetSelectMode)
                 return;
 
             _preDragLocation = transform.parent;
@@ -102,7 +114,7 @@ namespace Assets.Scripts
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (!Draggable || MainUIController.BlockDragAction)
+            if (!Draggable || MainUIController.BlockDragAction || MainUIController.TargetSelectMode)
                 return;
 
             transform.localPosition = MainUIController.Instance.SecondaryCanvas.ScreenToCanvasPosition(Input.mousePosition);
@@ -110,7 +122,7 @@ namespace Assets.Scripts
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!Draggable || MainUIController.BlockDragAction)
+            if (!Draggable || MainUIController.BlockDragAction || MainUIController.TargetSelectMode)
                 return;
 
             LineUI targetLine = eventData.pointerCurrentRaycast.gameObject.GetComponent<LineUI>();

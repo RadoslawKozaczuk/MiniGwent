@@ -22,12 +22,14 @@ namespace Assets.Scripts.UI
         public bool Outline = false;
         public LineIndicator LineIndicator;
         public PlayerIndicator PlayerIndicator;
+        public int TargetSlotPositionNumber;
 
         OutlineController _outline;
         GameObject _targetSlotIndicator;
         GridLayoutGroup _gridLayoutGroup;
         bool _isMouseOver;
 
+        #region Unity life-cycle methods
         void Awake()
         {
             if(Outline)
@@ -36,7 +38,6 @@ namespace Assets.Scripts.UI
             _gridLayoutGroup = GetComponent<GridLayoutGroup>();
         }
 
-        public int TargetSlotPositionNumber; 
 
         void Update()
         {
@@ -49,11 +50,15 @@ namespace Assets.Scripts.UI
                 _targetSlotIndicator.transform.SetSiblingIndex(TargetSlotPositionNumber);
             }
         }
+        #endregion
 
         #region Interfaces Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            //Debug.Log("LineUI OnPointerEnter call");
+            MainUIController.MouseHoveringOverAllyLine = PlayerIndicator == PlayerIndicator.Bot;
+            MainUIController.MouseHoveringOverEnemyLine 
+                = PlayerIndicator == PlayerIndicator.Top && LineIndicator != LineIndicator.TopDeck;
+
             _isMouseOver = true;
 
             CardUI card = MainUIController.CardBeingDraged;
@@ -72,6 +77,9 @@ namespace Assets.Scripts.UI
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            MainUIController.MouseHoveringOverAllyLine = false;
+            MainUIController.MouseHoveringOverEnemyLine = false;
+
             _isMouseOver = false;
 
             DestroyTargetSlotIndicator();
@@ -80,18 +88,6 @@ namespace Assets.Scripts.UI
                 _outline.TurnPulsationOff();
         }
         #endregion
-
-        int GetTargetSlotPositionNumber()
-        {
-            for (int i = 0; i < Cards.Count; i++)
-            {
-                Vector3 cardPos = Cards[i].transform.parent.localPosition;
-                if (MainUIController.Instance.SecondaryCanvas.ScreenToCanvasPosition(Input.mousePosition).x < cardPos.x)
-                    return i;
-            }
-
-            return Cards.Count;
-        }
 
         /// <summary>
         /// This removes the slot container game object.
@@ -167,6 +163,18 @@ namespace Assets.Scripts.UI
             _targetSlotIndicator = null;
 
             RecalculateSpacing();
+        }
+
+        int GetTargetSlotPositionNumber()
+        {
+            for (int i = 0; i < Cards.Count; i++)
+            {
+                Vector3 cardPos = Cards[i].transform.parent.localPosition;
+                if (MainUIController.Instance.SecondaryCanvas.ScreenToCanvasPosition(Input.mousePosition).x < cardPos.x)
+                    return i;
+            }
+
+            return Cards.Count;
         }
 
         void RecalculateSpacing() 

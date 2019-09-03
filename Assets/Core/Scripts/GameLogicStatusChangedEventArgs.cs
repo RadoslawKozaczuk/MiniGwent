@@ -15,7 +15,6 @@ namespace Assets.Core
         public int TopTotalStrength;
         public int BotTotalStrength;
         public List<List<int>> CardStrengths;
-
         public List<SkillTargetData> Targets;
         public CardSkill Skill;
         public SkillVisualEffect VisualEffect;

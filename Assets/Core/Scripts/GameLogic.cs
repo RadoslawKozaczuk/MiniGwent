@@ -60,7 +60,7 @@ namespace Assets.Core
                 targetLine.Add(card);
             }
 
-            BroadcastUpdateStrength_StatusUpdate();
+            BroadcastInitialData_LogUpdate();
 
             if (doNotSendCopy)
                 return null;
@@ -440,6 +440,11 @@ namespace Assets.Core
                         BotTotalStrength = BotTotalStrength,
                     });
         }
+
+        internal void BroadcastInitialData_LogUpdate() 
+            => GameLogicLogUpdateEventHandler?.Invoke(
+                this,
+                new GameLogicLogUpdateEventArgs(PlayerIndicator.Top, GetCurrentStatus(), null, TopTotalStrength, BotTotalStrength));
 
         internal void BroadcastCardMove_LogUpdate(PlayerIndicator player, MoveData move)
         {
