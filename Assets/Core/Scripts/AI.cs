@@ -121,7 +121,6 @@ namespace Assets.Core
             if (_fakeThinking) // pretend it took you some time to come up with such an amazing idea
                 await Task.Delay(UnityEngine.Random.Range(MIN_THINKING_TIME, MAX_THINKING_TIME));
 
-            // hot fix
             int c = _gameLogic.GetLine(_myIndicator, line).Count;
             if (targetSlotNumber > c || targetSlotNumber < 0)
                 targetSlotNumber = 0;

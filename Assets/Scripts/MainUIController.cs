@@ -444,7 +444,6 @@ namespace Assets.Scripts
 
             foreach (SkillTargetData target in targets)
             {
-                // hot fix
                 LineUI l = _lines[(int)target.Line];
                 if(target.SlotNumber < l.Cards.Count)
                     targetCards.Add(l[target.SlotNumber]);
