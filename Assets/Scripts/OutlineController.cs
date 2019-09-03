@@ -26,7 +26,14 @@ namespace Assets.Scripts
         }
         #endregion
 
-        public void TurnPulsationOn() => _pulsation = true;
+        public void TurnPulsationOn()
+        {
+            _outline.effectColor = MainUIController.GlobalTargetSelectMode 
+                ? _redColor 
+                : _cyanColor;
+
+            _pulsation = true;
+        }
 
         public void TurnPulsationOff()
         {

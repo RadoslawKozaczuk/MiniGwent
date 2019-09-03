@@ -24,30 +24,30 @@ namespace Assets.Editor.CoreAssemblyTests
         {
             // arrange
             var list0 = new List<int>(0);
-            var list1 = new List<int>(1) { 1 };
-            var list4 = new List<int>(4) { 1, 2, 3, 4 };
+            var list3 = new List<int>(4) { 1, 2, 3 };
 
             // act
-            List<int> last1_from_list0 = list0.GetLast(1).ToList();
-
-            List<int> last0_from_list1 = list1.GetLast(0).ToList();
-            List<int> last1_from_list1 = list1.GetLast(1).ToList();
-            List<int> last5_from_list1 = list1.GetLast(5).ToList();
-
-            List<int> last5_from_list4 = list4.GetLast(5).ToList();
+            List<int> last1_from_empty = list0.GetLast(1).ToList();
+            List<int> last1 = list3.GetLast(1).ToList();
+            List<int> last2 = list3.GetLast(2).ToList();
+            List<int> last5 = list3.GetLast(5).ToList();
 
             // assert
-            Assert.IsTrue(last1_from_list0.Count == 0);
+            Assert.Throws(typeof(ArgumentOutOfRangeException), () => list3.GetLast(-1));
 
-            Assert.IsTrue(last0_from_list1.Count == 0);
-            Assert.That(last1_from_list1, Has.Exactly(1).EqualTo(1));
-            Assert.That(last5_from_list1, Has.Exactly(1).EqualTo(1));
+            Assert.IsTrue(last1_from_empty.Count == 0);
 
-            Assert.IsTrue(last5_from_list4.Count == 4);
-            Assert.IsTrue(last5_from_list4[0] == 1 
-                && last5_from_list4[1] == 2
-                && last5_from_list4[2] == 3
-                && last5_from_list4[3] == 4);
+            Assert.IsTrue(last1.Count == 1);
+            Assert.IsTrue(last1[0] == 3);
+
+            Assert.IsTrue(last2.Count == 2);
+            Assert.IsTrue(last2[0] == 2 
+                && last2[1] == 3);
+
+            Assert.IsTrue(last5.Count == 3);
+            Assert.IsTrue(last5[0] == 1
+                && last5[1] == 2
+                && last5[2] == 3);
         }
 
         [Test]

@@ -68,10 +68,10 @@ namespace Assets.Scripts
         #region Interface Implementation
         public void OnPointerEnter(PointerEventData eventData)
         {
-            Debug.Log($"OnPointerEnter: CardBeingDragged==null->{MainUIController.CardBeingDraged == null}, hidden==true->{_hidden==true}");
+            MainUIController.CardMouseOver = this;
 
             // if nothing is being dragged
-            if(!MainUIController.CardBeingDraged && !_hidden)
+            if (!MainUIController.CardBeingDraged && !_hidden)
             {
                 _outlineController.TurnPulsationOn();
                 MainUIController.Instance.CardInfoPanel.gameObject.SetActive(true);
@@ -81,6 +81,8 @@ namespace Assets.Scripts
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            MainUIController.CardMouseOver = null;
+
             _outlineController.TurnPulsationOff();
             MainUIController.Instance.CardInfoPanel.gameObject.SetActive(false);
         }
@@ -136,12 +138,5 @@ namespace Assets.Scripts
             MainUIController.CardBeingDraged = null;
         }
         #endregion
-
-        public void Initialize()
-        {
-            GetComponent<Image>().enabled = true;
-            GetComponent<Outline>().enabled = true;
-            _outlineController.enabled = true;
-        }
     }
 }

@@ -7,10 +7,19 @@ namespace Assets.Core
     public static class ExtensionMethods
     {
         /// <summary>
-        /// Returns last n elements.
+        /// Returns last n elements. 
+        /// When n is greater or equal the collection's size returns entire collection.
+        /// When n = 0 returns empty collection.
         /// </summary>
-        public static IEnumerable<T> GetLast<T>(this IEnumerable<T> source, int n) 
-            => source.Skip(Math.Max(0, source.Count() - n));
+        public static IEnumerable<T> GetLast<T>(this IEnumerable<T> source, int n)
+        {
+#if UNITY_EDITOR
+            if (n < 0)
+                throw new ArgumentOutOfRangeException("except", $"Except argument cannot be lower than 0");
+#endif
+
+            return source.Skip(Math.Max(0, source.Count() - n));
+        }
 
         /// <summary>
         /// Executes given action on all elements starting from the slotNumber-element (inclusive).
@@ -40,7 +49,9 @@ namespace Assets.Core
         {
 #if UNITY_EDITOR
             if (slotNumber < 0 || slotNumber >= source.Count())
-                throw new ArgumentOutOfRangeException("slotNumber", "SlotNumber argument should not be negative or greater than source collection's size");
+                throw new ArgumentOutOfRangeException(
+                    "slotNumber", 
+                    "SlotNumber argument should not be negative or greater than source collection's size");
 #endif
 
             return slotNumber == 0 
@@ -64,7 +75,9 @@ namespace Assets.Core
         {
 #if UNITY_EDITOR
             if (slotNumber < 0 || slotNumber >= source.Count())
-                throw new ArgumentOutOfRangeException("slotNumber", "SlotNumber argument should not be negative or greater than source collection's size");
+                throw new ArgumentOutOfRangeException(
+                    "slotNumber", 
+                    "SlotNumber argument should not be negative or greater than source collection's size");
 #endif
 
             var list = new List<T>(2);

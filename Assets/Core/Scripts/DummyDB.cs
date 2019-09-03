@@ -42,13 +42,13 @@ namespace Assets.Core
                 strength: 5),
             new CardData(
                 title: "Elven Archer",
-                description: "On deploy he shot one enemy of your choice inflicting 3 DMG.",
-                strength: 5),
-                //skill: new CardSkill(
-                //    executionTime: SkillExecutionTime.OnDeployManual,
-                //    targets: new List<SkillTarget> { SkillTarget.SingleEnemy },
-                //    effect: card => card.CurrentStrength -= 3,
-                //    visualEffect: SkillVisualEffect.GreenCloud))
+                description: "On deploy he shot one enemy of your choice in the eye inflicting 3 DMG.",
+                strength: 5,
+                skill: new CardSkill(
+                    executionTime: SkillExecutionTime.OnDeployManual,
+                    targets: new List<SkillTarget> { SkillTarget.SingleEnemy },
+                    effect: card => card.CurrentStrength -= 3,
+                    visualEffect: SkillVisualEffect.GreenCloud)),
             new CardData(
                 title: "Tree of Eternity",
                 description: "Heals allies on left and right. "

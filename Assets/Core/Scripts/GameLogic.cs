@@ -139,7 +139,10 @@ namespace Assets.Core
                 + "PlayerIndicator or PlayerLine enumerator must have been extended without extending the MapPlayerLine function.");
         }
 
-        public void MoveCardForUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
+        public void MoveCardForUI(
+            LineIndicator fromLine, int fromSlotNumber, 
+            LineIndicator targetLine, int targetSlotNumber, 
+            bool applySkill = true)
         {
             #region Assertions
 #if UNITY_EDITOR
@@ -164,7 +167,33 @@ namespace Assets.Core
             else
                 tLine.Insert(targetSlotNumber, card);
 
-            ApplySkillEffectIfAny(card, targetLine, targetSlotNumber);
+            if(applySkill)
+            {
+                ApplySkillEffectIfAny(card, targetLine, targetSlotNumber);
+
+                // it's important to evaluate strengths before RemoveDeadOnes is called
+                // as we want our data match the upper logic's data 
+                // UI removes its elements later on
+                List<List<int>> cardStrengths = GetCardStrengths();
+
+                // remove dead ones
+                RemoveDeadOnes();
+
+                // inform upper logic about new strengths
+                BroadcastUpdateStrength(cardStrengths);
+            }
+        }
+
+        public void ApplySkillForUI(SkillTargetData target, CardSkill skill)
+        {
+#if UNITY_EDITOR
+            if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
+                throw new ArgumentException("skill", "this method should be used only for manually resolved skills");
+#endif
+
+            // parse target to model
+            CardModel model = _lines[(int)target.Line][target.SlotNumber];
+            skill.Effect(model); // apply the skill
 
             // it's important to evaluate strengths before RemoveDeadOnes is called
             // as we want our data match the upper logic's data 

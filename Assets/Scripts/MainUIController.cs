@@ -15,7 +15,9 @@ namespace Assets.Scripts
         public static MainUIController Instance;
         public static readonly DummyDB DB = new DummyDB();
         public static Sprite[] Icons;
-        public static CardUI CardBeingDraged; // this is used as a condition for lines whether they suppose to pulsate or not
+        public static CardUI CardBeingDraged;
+        public static CardUI CardMouseOver; // card with mouse over it
+        public static CardUI CardSelected; // card with mouse over it
         static public bool BlockDragAction;
 
         PlayerIndicator _currentPlayer;
@@ -63,6 +65,8 @@ namespace Assets.Scripts
         public Canvas MainCanvas; // everything is here
         public Canvas SecondaryCanvas; // only dragged items are here
 
+        public static bool GlobalTargetSelectMode;
+
         LineUI[] _lines;
 
         #region Unity life-cycle methods
@@ -78,34 +82,37 @@ namespace Assets.Scripts
             GameLogic.GameLogicStatusChangedEventHandler += HandleGameLogicStatusChanged;
         }
 
-        public void StartGame(PlayerControl botControl)
-        {
-            _gameLogic = new GameLogic(botControl);
-
-            _botPlayerControl = botControl;
-
-            _statusPanel.gameObject.SetActive(true);
-            _linesGroup.gameObject.SetActive(true);
-            _endTurnPanel.gameObject.SetActive(true);
-            _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
-            BlackBackground.SetActive(false);
-
-            // if both players are AI both decs are visible
-            SpawnDeck(PlayerIndicator.Top, hidden: _botPlayerControl == PlayerControl.Human);
-            SpawnDeck(PlayerIndicator.Bot, hidden: false);
-
-            if (_botPlayerControl == PlayerControl.AI)
-                _gameLogic.StartNextTurn();
-            else
-                _endTurnPanel.SetYourTurn();
-        }
-
         void Update()
         {
             if(Input.GetKeyDown(KeyCode.Space) && _endTurnPanel.Interactable)
                 HandleEndTurnAction();
+            else if(Input.GetMouseButtonDown(0))
+            {
+                if(GlobalTargetSelectMode && CardMouseOver) // I need targets
+                {
+                    // target selected
+                    HandleTargetSelected();
+                }
+            }
         }
         #endregion
+
+        async void HandleTargetSelected()
+        {
+            var target = new SkillTargetData(CardMouseOver.ParentLineUI.LineIndicator, CardMouseOver.SlotNumber);
+            CardSkill skill = DB[CardSelected.Id].Skill;
+            CardSelected = null;
+
+            await DisplayVisualEffects(new List<SkillTargetData>(1) { target }, skill.VisualEffect);
+
+            // apply the effects - this will also apply card skill effects if any
+            _gameLogic.ApplySkillForUI(target, skill);
+
+            // later on add some extra logic like check if all cards action are played or something like that
+            _endTurnPanel.SetNothingElseToDo();
+
+            BlockDragAction = true;
+        }
 
         #region Interface Implementation
         public void HandleEndTurnAction()
@@ -128,17 +135,70 @@ namespace Assets.Scripts
 
             CardUI movedCard = MoveCardOnUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
-            await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
+            // do I need target or not
+            CardSkill skill = DB[movedCard.Id].Skill;
 
-            // apply the effects - this will also apply card skill effects if any
-            _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+            if(skill == null)
+            {
+                // apply the effects - this will also apply card skill effects if any
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 
-            // later on add some extra logic like check if all cards action are played or something like that
-            _endTurnPanel.SetNothingElseToDo();
+                // later on add some extra logic like check if all cards action are played or something like that
+                _endTurnPanel.SetNothingElseToDo();
 
-            BlockDragAction = true;
+                BlockDragAction = true;
+            }
+            // targets can be autoresolved
+            else if(skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
+            {
+                await DisplayVisualEffectsIfAny(movedCard, targetLine, targetSlotNumber);
+
+                // apply the effects - this will also apply card skill effects if any
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+
+                // later on add some extra logic like check if all cards action are played or something like that
+                _endTurnPanel.SetNothingElseToDo();
+
+                BlockDragAction = true;
+            }
+            else if(skill.ExecutionTime == SkillExecutionTime.OnDeployManual)
+            {
+                // waiting for user response
+                _endTurnPanel.SetSelectTarget();
+                GlobalTargetSelectMode = true;
+
+                CardSelected = _lines[(int)targetLine][targetSlotNumber];
+
+                // apply the effects - this will NOT apply the card skill effects
+                _gameLogic.MoveCardForUI(fromLine, fromSlotNumber, targetLine, targetSlotNumber, false);
+
+                // just deployed card need to be constantly outlined (without pulsation)
+                // any enemy card need to highlighted with red pulsation instead of blue
+            }
         }
         #endregion
+
+        public void StartGame(PlayerControl botControl)
+        {
+            _gameLogic = new GameLogic(botControl);
+
+            _botPlayerControl = botControl;
+
+            _statusPanel.gameObject.SetActive(true);
+            _linesGroup.gameObject.SetActive(true);
+            _endTurnPanel.gameObject.SetActive(true);
+            _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
+            BlackBackground.SetActive(false);
+
+            // if both players are AI both decs are visible
+            SpawnDeck(PlayerIndicator.Top, hidden: _botPlayerControl == PlayerControl.Human);
+            SpawnDeck(PlayerIndicator.Bot, hidden: false);
+
+            if (_botPlayerControl == PlayerControl.AI)
+                _gameLogic.StartNextTurn();
+            else
+                _endTurnPanel.SetYourTurn();
+        }
 
         List<CardUI> ParseCardSkillTarget(LineIndicator targetLine, int targetSlotNumber, SkillTarget target)
         {
@@ -214,10 +274,7 @@ namespace Assets.Scripts
                     + $" tLine:{eventArgs.LastMove.TargetLine.ToString()}" 
                     + $" tSlot:{eventArgs.LastMove.TargetSlotNumber}");
 
-                MoveData move = eventArgs.LastMove;
-                MoveCardForAIV2(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
-                //CardUI movedCard = MoveCardOnUI(eventArgs.LastMove);
-                //movedCard.Initialize();
+                MoveCardOnUI(eventArgs.LastMove);
                 // TODO: add card move animation and return control after its over
 
                 // control return
@@ -291,35 +348,38 @@ namespace Assets.Scripts
             EndGamePanel.SetData(topStrength, botStrength);
         }
 
-        CardUI MoveCardForAIV2(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
+        void MoveCardOnUI(MoveData move)
         {
             #region Assertions
 #if UNITY_EDITOR
-            MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
+            MoveCardAssertions(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
 #endif
             #endregion
 
-            LineUI fLine = _lines[(int)fromLine];
-            LineUI tLine = _lines[(int)targetLine];
+            LineUI fLine = _lines[(int)move.FromLine];
+            LineUI tLine = _lines[(int)move.TargetLine];
 
-            Transform cardContainer = fLine.transform.GetChild(fromSlotNumber);
+            Transform cardContainer = fLine.transform.GetChild(move.FromSlotNumber);
             cardContainer.SetParent(tLine.transform);
 
-            // add to list and increase slot number on the right by one
             CardUI card = cardContainer.transform.GetChild(0).GetComponent<CardUI>();
-            card.Hidden = false;
-            tLine.Cards.Add(card);
-            tLine.Cards.GetLast(fLine.Cards.Count - targetSlotNumber - 1).ToList()
+            card.Hidden = false; // cards in this game never go hidden again so we can safely set it to false here
+            card.ParentLineUI = tLine;
+            card.SlotNumber = move.TargetSlotNumber;
+
+            // add to list and increase slot number on the right by one
+            if (move.TargetSlotNumber == tLine.Cards.Count)
+                tLine.Cards.Add(card);
+            else
+                tLine.Cards.Insert(move.TargetSlotNumber, card);
+
+            tLine.Cards.GetLast(tLine.Cards.Count - move.TargetSlotNumber - 1).ToList()
                 .ForEach(c => c.SlotNumber++);
 
             // remove from list and decrease slot number on the right by one
-            fLine.Cards.RemoveAt(fromSlotNumber);
-            fLine.Cards.GetLast(fLine.Cards.Count - fromSlotNumber - 1).ToList()
+            fLine.Cards.RemoveAt(move.FromSlotNumber);
+            fLine.Cards.GetLast(fLine.Cards.Count - move.FromSlotNumber).ToList()
                 .ForEach(c => c.SlotNumber--);
-
-            Debug.Log($"I just moved a card from {fromLine.ToString()},{fromSlotNumber} to {targetLine.ToString()},{targetSlotNumber}");
-
-            return card;
         }
 
         CardUI MoveCardOnUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
@@ -338,8 +398,6 @@ namespace Assets.Scripts
 
             fLine.RemoveFromLine(fromSlotNumber);
             tLine.InsertCard(card, targetSlotNumber);
-
-            Debug.Log($"I just moved a card from {fromLine.ToString()},{fromSlotNumber} to {targetLine.ToString()},{targetSlotNumber}");
 
             return card;
         }
