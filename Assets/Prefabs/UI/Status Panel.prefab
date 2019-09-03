@@ -141,7 +141,7 @@ MonoBehaviour:
     spaceCount: 22
     wordCount: 26
     linkCount: 0
-    lineCount: 10
+    lineCount: 12
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -172,7 +172,7 @@ GameObject:
   - component: {fileID: 1836558958961385401}
   - component: {fileID: 1836558958961385403}
   m_Layer: 5
-  m_Name: Game Logic Internal Status Panel
+  m_Name: Status Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

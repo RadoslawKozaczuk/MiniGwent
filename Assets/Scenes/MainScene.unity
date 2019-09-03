@@ -1074,7 +1074,7 @@ PrefabInstance:
     - target: {fileID: 1836558958961385407, guid: 6f99a0e2e140f284097c9ac1f1184a7f,
         type: 3}
       propertyPath: m_Name
-      value: Game Logic Internal Status Panel
+      value: Status Panel
       objectReference: {fileID: 0}
     - target: {fileID: 1836558958961385407, guid: 6f99a0e2e140f284097c9ac1f1184a7f,
         type: 3}

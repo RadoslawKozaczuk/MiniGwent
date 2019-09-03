@@ -308,6 +308,8 @@ namespace Assets.Core
                 targetLine.Add(card);
             }
 
+            BroadcastUpdateStrength();
+
             return new List<CardModel>(targetLine); // encapsulation
         }
 
@@ -345,7 +347,10 @@ namespace Assets.Core
                 this, 
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.MoveCard, CurrentPlayer)
                 {
-                    LastMove = move
+                    LastMove = move,
+                    TopTotalStrength = TopTotalStrength,
+                    BotTotalStrength = BotTotalStrength,
+                    CurrentStatus = GetCurrentStatus()
                 });
 
         internal void BroadcastPlaySkillVFX(List<SkillTargetData> targets, SkillVisualEffect visualEffect)
@@ -354,7 +359,10 @@ namespace Assets.Core
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.PlaySkillVFX, CurrentPlayer)
                 {
                     Targets = targets,
-                    VisualEffect = visualEffect
+                    VisualEffect = visualEffect,
+                    TopTotalStrength = TopTotalStrength,
+                    BotTotalStrength = BotTotalStrength,
+                    CurrentStatus = GetCurrentStatus()
                 });
 
         // early evaluation
@@ -363,7 +371,10 @@ namespace Assets.Core
                 this,
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
                 {
-                    CardStrengths = cardStrengths
+                    CardStrengths = cardStrengths,
+                    TopTotalStrength = TopTotalStrength,
+                    BotTotalStrength = BotTotalStrength,
+                    CurrentStatus = GetCurrentStatus()
                 });
 
         // late evaluation
@@ -372,7 +383,10 @@ namespace Assets.Core
                 this,
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.UpdateStrength, CurrentPlayer)
                 {
-                    CardStrengths = GetCardStrengths()
+                    CardStrengths = GetCardStrengths(),
+                    TopTotalStrength = TopTotalStrength,
+                    BotTotalStrength = BotTotalStrength,
+                    CurrentStatus = GetCurrentStatus()
                 });
 
         internal void BroadcastEndTurn()
@@ -384,7 +398,8 @@ namespace Assets.Core
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.EndTurn, CurrentPlayer)
                 {
                     TopTotalStrength = TopTotalStrength,
-                    BotTotalStrength = BotTotalStrength
+                    BotTotalStrength = BotTotalStrength,
+                    CurrentStatus = GetCurrentStatus()
                 });
         }
 
@@ -394,7 +409,8 @@ namespace Assets.Core
                 new GameLogicStatusChangedEventArgs(GameLogicMessageType.GameOver, CurrentPlayer)
                 {
                      TopTotalStrength = TopTotalStrength,
-                     BotTotalStrength = BotTotalStrength
+                     BotTotalStrength = BotTotalStrength,
+                     CurrentStatus = GetCurrentStatus()
                 });
 
         #region Assertions
