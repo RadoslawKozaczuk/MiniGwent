@@ -298,7 +298,7 @@ namespace Assets.Core
         /// <summary>
         /// For safety reasons it returns a copy of the list.
         /// </summary>
-        public List<CardModel> SpawnRandomDeck(PlayerIndicator player)
+        public List<CardModel> SpawnRandomDeck(PlayerIndicator player, bool doNotSendCopy = false)
         {
             List<CardModel> targetLine = _lines[player == PlayerIndicator.Top ? 0 : 5];
             for (int i = 0; i < NUMBER_OF_CARDS_IN_DECK; i++)
@@ -309,6 +309,9 @@ namespace Assets.Core
             }
 
             BroadcastUpdateStrength();
+
+            if (doNotSendCopy)
+                return null;
 
             return new List<CardModel>(targetLine); // encapsulation
         }

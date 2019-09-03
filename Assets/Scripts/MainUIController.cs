@@ -18,7 +18,7 @@ namespace Assets.Scripts
         public static CardUI CardBeingDraged;
         public static CardUI CardMouseOver; // card with mouse over it
         public static CardUI CardSelected; // card with mouse over it
-        static public bool BlockDragAction;
+        public static bool BlockDragAction;
 
         PlayerIndicator _currentPlayer;
         public PlayerIndicator CurrentPlayer
@@ -66,6 +66,7 @@ namespace Assets.Scripts
         public Canvas SecondaryCanvas; // only dragged items are here
 
         public static bool GlobalTargetSelectMode;
+        public static bool GlobalShowUIMode;
 
         LineUI[] _lines;
 
@@ -178,21 +179,35 @@ namespace Assets.Scripts
         }
         #endregion
 
-        public void StartGame(PlayerControl botControl)
+        public void StartGame(PlayerControl botControl, bool showUI)
         {
             _gameLogic = new GameLogic(botControl);
 
             _botPlayerControl = botControl;
+            GlobalShowUIMode = showUI;
+
+            if(GlobalShowUIMode)
+            {
+                _linesGroup.gameObject.SetActive(true);
+                _endTurnPanel.gameObject.SetActive(true);
+                _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
+            }
 
             _statusPanel.gameObject.SetActive(true);
-            _linesGroup.gameObject.SetActive(true);
-            _endTurnPanel.gameObject.SetActive(true);
-            _endTurnPanel.CurrentTurn = PlayerIndicator.Bot;
             BlackBackground.SetActive(false);
 
-            // if both players are AI both decs are visible
-            SpawnDeck(PlayerIndicator.Top, hidden: _botPlayerControl == PlayerControl.Human);
-            SpawnDeck(PlayerIndicator.Bot, hidden: false);
+            if(GlobalShowUIMode)
+            {
+                // if both players are AI both decs are visible
+                SpawnDeck(PlayerIndicator.Top, hidden: _botPlayerControl == PlayerControl.Human);
+                SpawnDeck(PlayerIndicator.Bot, hidden: false);
+            }
+            else
+            {
+                // use internal logic only
+                _gameLogic.SpawnRandomDeck(PlayerIndicator.Top, doNotSendCopy: true);
+                _gameLogic.SpawnRandomDeck(PlayerIndicator.Bot, doNotSendCopy: true);
+            }
 
             if (_botPlayerControl == PlayerControl.AI)
                 _gameLogic.StartNextTurn();
@@ -259,6 +274,12 @@ namespace Assets.Scripts
         /// </summary>
         async void HandleGameLogicStatusChanged(object sender, GameLogicStatusChangedEventArgs eventArgs)
         {
+            if (!GlobalShowUIMode)
+            {
+                _gameLogic.ReturnControl(); // no interface - return control immediately
+                return;
+            }
+
             CurrentPlayer = eventArgs.CurrentPlayer;
 
             // AI wants me to move a card
