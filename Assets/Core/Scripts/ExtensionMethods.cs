@@ -57,7 +57,7 @@ namespace Assets.Core
 
         public static IEnumerable<T> GetLeftNeighbor<T>(this IEnumerable<T> source, int slotNumber)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (slotNumber < 0 || slotNumber >= source.Count())
                 throw new ArgumentOutOfRangeException(
                     "slotNumber", 
@@ -83,7 +83,7 @@ namespace Assets.Core
 
         public static IEnumerable<T> GetBothNeighbors<T>(this IEnumerable<T> source, int slotNumber)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (slotNumber < 0 || slotNumber >= source.Count())
                 throw new ArgumentOutOfRangeException(
                     "slotNumber", 

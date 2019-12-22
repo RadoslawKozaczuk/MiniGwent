@@ -13,7 +13,7 @@ namespace Assets.Core.CardSkills
 
         public CardSkill(SkillExecutionTime executionTime, List<SkillTarget> targets, Action<CardModel> effect, SkillVisualEffect visualEffect)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (targets == null)
                 throw new ArgumentNullException("targets", "Targets parameter cannot be null.");
             else if (targets.Count == 0)

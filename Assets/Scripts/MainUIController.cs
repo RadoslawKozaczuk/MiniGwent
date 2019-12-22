@@ -111,7 +111,7 @@ namespace Assets.Scripts
             BlockDragAction = true;
 
             #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 #endif
             #endregion
@@ -317,7 +317,7 @@ namespace Assets.Scripts
             {
                 MoveData move = eventArgs.LastMove;
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 if (move == null)
                     throw new System.ArgumentNullException("LastMove", "LastMove cannot be null in this context.");
 #endif
@@ -364,7 +364,7 @@ namespace Assets.Scripts
         CardUI MoveCardOnUI(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             MoveCardAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 #endif
             #endregion
@@ -384,7 +384,7 @@ namespace Assets.Scripts
         void MoveCardOnUI(MoveData move)
         {
             #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             MoveCardAssertions(move.FromLine, move.FromSlotNumber, move.TargetLine, move.TargetSlotNumber);
 #endif
             #endregion
@@ -476,7 +476,7 @@ namespace Assets.Scripts
         }
 
         #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         void MoveCardAssertions(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)

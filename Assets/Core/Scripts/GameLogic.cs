@@ -94,7 +94,7 @@ namespace Assets.Core
 
         public void ApplySkillForUI(List<SkillTargetData> targets, CardSkill skill)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (skill.ExecutionTime == SkillExecutionTime.OnDeployAutomatic)
                 throw new ArgumentException("skill", "this method should be used only for manually resolved skills");
 #endif
@@ -129,7 +129,7 @@ namespace Assets.Core
             bool applySkill = true)
         {
             #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             MoveDataAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 #endif
             #endregion
@@ -212,7 +212,7 @@ namespace Assets.Core
             int targetSlotNumber = moveData.TargetSlotNumber;
 
             #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             MoveDataAssertions(fromLine, fromSlotNumber, targetLine, targetSlotNumber);
 #endif
             #endregion
@@ -438,7 +438,7 @@ namespace Assets.Core
 
         internal void BroadcastGameOver_StatusUpdate()
         {
-            _gameOver = true; // aster this moment all return calls will be ignored
+            _gameOver = true; // after this moment all return calls will be ignored
 
             int top = TopTotalStrength, bot = BotTotalStrength;
             string msg = top > bot 
@@ -471,7 +471,7 @@ namespace Assets.Core
 
         internal void BroadcastCardMove_LogUpdate(PlayerIndicator player, MoveData move)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (move == null)
                 throw new ArgumentNullException("move", "Move argument cannot be null in this context.");
 #endif
@@ -490,7 +490,7 @@ namespace Assets.Core
 
         internal void BroadcastSkillEffect_LogUpdate(PlayerIndicator player, List<CardModel> targets, CardSkill skill)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (skill == null)
                 throw new ArgumentNullException("skill", "Skill argument cannot be null in this context.");
 #endif
@@ -520,7 +520,7 @@ namespace Assets.Core
         #endregion
 
         #region Assertions
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         void MoveDataAssertions(LineIndicator fromLine, int fromSlotNumber, LineIndicator targetLine, int targetSlotNumber)
         {
             if (fromSlotNumber < 0 || fromSlotNumber > _lines[(int)fromLine].Count)
